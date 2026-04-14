@@ -1,32 +1,62 @@
-import { Skeleton } from './ui/Skeleton.jsx'
-import { EmptyState } from './ui/EmptyState.jsx'
-
 const SOURCE_COLORS = [
-  'text-indigo-600',
-  'text-sky-600',
-  'text-emerald-600',
-  'text-rose-600',
-  'text-amber-600',
+  'text-indigo-600', 'text-sky-600', 'text-emerald-600', 'text-rose-600', 'text-amber-600',
 ]
+function sourceColor(source = '') {
+  let h = 0
+  for (let i = 0; i < source.length; i++) h = source.charCodeAt(i) + h * 31
+  return SOURCE_COLORS[Math.abs(h) % SOURCE_COLORS.length]
+}
 
-function sourceColor(source) {
-  let hash = 0
-  for (let i = 0; i < source.length; i++) hash = source.charCodeAt(i) + hash * 31
-  return SOURCE_COLORS[Math.abs(hash) % SOURCE_COLORS.length]
+function HeadlineCard({ h, isSelected, onSelect }) {
+  return (
+    <div
+      onClick={() => onSelect(isSelected ? null : h.id)}
+      className={[
+        'relative rounded-xl border bg-white p-4 cursor-pointer transition-all duration-150 flex flex-col gap-2',
+        isSelected
+          ? 'ring-2 ring-indigo-500 border-indigo-200 shadow-md'
+          : 'border-stone-200 hover:border-stone-300 hover:shadow-sm',
+      ].join(' ')}
+    >
+      {isSelected && (
+        <div className="absolute top-3 right-3 w-5 h-5 bg-indigo-600 rounded-full flex items-center justify-center">
+          <span className="text-white text-xs leading-none">✓</span>
+        </div>
+      )}
+      <p className={`text-xs font-semibold uppercase tracking-wide ${sourceColor(h.source)}`}>
+        {h.source}
+      </p>
+      {/* Full title — no line-clamp so it's always fully visible */}
+      <p className="text-sm font-semibold text-stone-800 leading-snug flex-1">{h.title}</p>
+      <div className="flex items-center justify-between pt-1">
+        {isSelected && (
+          <span className="text-xs text-indigo-600 font-medium">Saved to journal</span>
+        )}
+        {h.url && (
+          <a
+            href={h.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="ml-auto text-xs text-stone-400 hover:text-indigo-600 transition-colors"
+          >
+            Read →
+          </a>
+        )}
+      </div>
+    </div>
+  )
 }
 
 export function NewsSection({ headlines, selectedHeadlineId, loading, onSelect }) {
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="space-y-3">
         {[0, 1, 2].map((i) => (
-          <div
-            key={i}
-            className="rounded-xl border border-gray-100 bg-white shadow-sm p-4 space-y-2"
-          >
-            <Skeleton className="w-1/3 h-3" />
-            <Skeleton className="w-full h-4" />
-            <Skeleton className="w-5/6 h-4" />
+          <div key={i} className="rounded-xl border border-stone-100 bg-white p-4 space-y-2">
+            <div className="h-3 bg-stone-100 animate-pulse rounded w-1/4" />
+            <div className="h-4 bg-stone-100 animate-pulse rounded w-full" />
+            <div className="h-4 bg-stone-100 animate-pulse rounded w-5/6" />
           </div>
         ))}
       </div>
@@ -35,70 +65,53 @@ export function NewsSection({ headlines, selectedHeadlineId, loading, onSelect }
 
   if (!headlines || headlines.length === 0) {
     return (
-      <EmptyState
-        icon="📰"
-        title="No headlines available"
-        description="Headlines will appear here when available."
-      />
+      <p className="font-journal text-stone-400 italic text-sm py-2">
+        No headlines available for this date.
+      </p>
     )
   }
 
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-      {headlines.map((h) => {
-        const isSelected = h.id === selectedHeadlineId
-        return (
-          <div
-            key={h.id}
-            onClick={() => onSelect(h.id)}
-            className={[
-              'relative rounded-xl border bg-white shadow-sm p-4 cursor-pointer transition-colors duration-150 flex flex-col gap-2 hover:bg-gray-50',
-              isSelected
-                ? 'ring-2 ring-indigo-600 border-indigo-200'
-                : 'border-gray-100',
-            ].join(' ')}
+  const selected = headlines.find((h) => h.id === selectedHeadlineId)
+
+  // ── After selection: show only the chosen headline, centered ─────────────
+  if (selected) {
+    return (
+      <div className="flex flex-col items-center text-center gap-3 py-4">
+        <p className={`text-xs font-semibold uppercase tracking-widest ${sourceColor(selected.source)}`}>
+          {selected.source}
+        </p>
+        <p className="font-journal text-base text-stone-800 leading-snug max-w-sm">
+          {selected.title}
+        </p>
+        {selected.url && (
+          <a
+            href={selected.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-indigo-500 hover:underline"
           >
-            {/* Selected check */}
-            {isSelected && (
-              <div className="absolute top-2 right-2 w-5 h-5 bg-indigo-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs leading-none">✓</span>
-              </div>
-            )}
+            Read full article →
+          </a>
+        )}
+        <button
+          onClick={() => onSelect(null)}
+          className="text-xs text-stone-300 hover:text-stone-500 transition-colors mt-1"
+        >
+          Change headline
+        </button>
+      </div>
+    )
+  }
 
-            {/* Source */}
-            <p
-              className={`text-xs font-semibold uppercase tracking-wide ${sourceColor(h.source)}`}
-            >
-              {h.source}
-            </p>
-
-            {/* Title */}
-            <p className="text-sm font-bold text-gray-900 leading-snug line-clamp-2 flex-1">
-              {h.title}
-            </p>
-
-            {/* Footer */}
-            <div className="flex items-center justify-between mt-auto pt-1">
-              {isSelected && (
-                <span className="text-xs text-indigo-600 font-medium">
-                  Saved to journal
-                </span>
-              )}
-              {h.url && (
-                <a
-                  href={h.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="ml-auto text-xs text-gray-400 hover:text-indigo-600 transition-colors duration-150"
-                >
-                  Read →
-                </a>
-              )}
-            </div>
-          </div>
-        )
-      })}
+  // ── Before selection: show all three ─────────────────────────────────────
+  return (
+    <div className="space-y-3">
+      <p className="font-journal text-xs text-stone-400 italic">
+        Choose one headline to save to this day's journal:
+      </p>
+      {headlines.map((h) => (
+        <HeadlineCard key={h.id} h={h} isSelected={false} onSelect={onSelect} />
+      ))}
     </div>
   )
 }

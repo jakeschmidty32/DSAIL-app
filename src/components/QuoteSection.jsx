@@ -1,11 +1,16 @@
 import { useState } from 'react'
 import { Skeleton } from './ui/Skeleton.jsx'
+import { useVoice } from '../hooks/useVoice.js'
 
 export function QuoteSection({ quote, loading, onSave }) {
   const [showForm, setShowForm] = useState(false)
   const [text, setText] = useState('')
   const [author, setAuthor] = useState('')
   const [saving, setSaving] = useState(false)
+
+  const { listening, transcript, startListening, stopListening, supported } = useVoice((result) => {
+    setText(result)
+  })
 
   function openEdit() {
     setText(quote?.text ?? '')
@@ -37,7 +42,7 @@ export function QuoteSection({ quote, loading, onSave }) {
     return (
       <div className="rounded-xl border border-indigo-100 bg-white shadow-sm p-4 space-y-3">
         <textarea
-          value={text}
+          value={listening ? (transcript || text) : text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Enter quote text…"
           rows={3}
@@ -50,6 +55,21 @@ export function QuoteSection({ quote, loading, onSave }) {
           placeholder="Author (optional)"
           className="w-full text-sm text-gray-700 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
+        {supported && (
+          <button
+            type="button"
+            onClick={listening ? stopListening : startListening}
+            className={listening
+              ? 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm bg-red-50 text-red-600 border border-red-200'
+              : 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border border-gray-200 text-gray-600 hover:bg-gray-50'
+            }
+          >
+            {listening
+              ? <><span className="w-2 h-2 rounded-full bg-red-500 animate-pulse inline-block" /> Recording… tap to stop</>
+              : <>🎤 Dictate quote</>
+            }
+          </button>
+        )}
         <div className="flex gap-2">
           <button
             onClick={handleSave}

@@ -1,1 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,600&display=swap');
 @import "tailwindcss";
+
+.font-journal {
+  font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+}
+.font-cursive {
+  font-family: 'Dancing Script', cursive;
+}

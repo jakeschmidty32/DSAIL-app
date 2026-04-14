@@ -9,15 +9,22 @@ import { Settings } from './components/Settings.jsx'
 // ── Login screen ──────────────────────────────────────────────────────────────
 function LoginScreen() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-sm w-full text-center">
-        <div className="text-5xl mb-4">📔</div>
-        <h1 className="text-2xl font-semibold text-gray-900 mb-1">Each Day</h1>
-        <p className="text-indigo-500 font-medium mb-6 tracking-wide text-sm uppercase">— Remembered</p>
-        <p className="text-gray-500 mb-8 text-sm leading-relaxed">
-          Your personal daily journal — capturing events, weather, news, and memories
-          in one place.
-        </p>
+    <div
+      className="relative min-h-screen flex flex-col items-center justify-center px-4"
+      style={{
+        backgroundImage: 'url(https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1920&q=80)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
+      <div className="absolute inset-0 bg-black/50" />
+      <div className="relative z-10 w-full text-center px-6">
+        <h1
+          className="font-cursive font-bold text-white mb-10 whitespace-nowrap"
+          style={{ fontSize: 'clamp(2.8rem, 8vw, 7rem)', lineHeight: 1.1 }}
+        >
+          Each Day — Remembered
+        </h1>
         <a
           href="/api/auth/connect"
           className="inline-flex items-center gap-3 bg-white border border-gray-200 text-gray-700 px-5 py-3 rounded-xl font-medium hover:bg-gray-50 shadow-sm transition-colors"
@@ -31,7 +38,7 @@ function LoginScreen() {
           </svg>
           Sign in with Google
         </a>
-        <p className="text-xs text-gray-400 mt-4">
+        <p className="text-xs text-white/60 mt-4">
           Connects to your Google Calendar. Only reads events — never writes.
         </p>
       </div>

@@ -12,6 +12,19 @@ function isValidDate(dateStr) {
   return !isNaN(d.getTime())
 }
 
+// Normalize DB row (snake_case) → frontend shape (camelCase)
+function normalizeNote(row) {
+  return {
+    id: row.id,
+    content: row.content,
+    isVoice: row.is_voice ?? false,
+    isPinned: row.is_pinned ?? false,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    journalDayId: row.journal_day_id,
+  }
+}
+
 /**
  * Ensure a journal_days row exists for this user+date, returning its id.
  */
@@ -249,7 +262,7 @@ router.get('/:date', async (req, res, next) => {
     // Quote
     let quote = null
     const { data: quoteRow } = await supabase
-      .from('journal_quotes')
+      .from('quotes')
       .select('text, author')
       .eq('user_id', userId)
       .eq('date', date)
@@ -303,7 +316,7 @@ router.get('/:date/notes', async (req, res, next) => {
 
     if (error) return next(new Error(error.message))
 
-    return res.json({ notes: notes || [] })
+    return res.json({ notes: (notes || []).map(normalizeNote) })
   } catch (err) {
     next(err)
   }
@@ -341,7 +354,7 @@ router.post('/:date/notes', async (req, res, next) => {
 
     if (error) return next(new Error(`Failed to create note: ${error.message}`))
 
-    return res.status(201).json({ note })
+    return res.status(201).json({ note: normalizeNote(note) })
   } catch (err) {
     next(err)
   }
@@ -398,7 +411,7 @@ router.put('/:date/notes/:id', async (req, res, next) => {
     if (error) return next(new Error(`Failed to update note: ${error.message}`))
     if (!note) return res.status(404).json({ error: 'Note not found' })
 
-    return res.json({ note })
+    return res.json({ note: normalizeNote(note) })
   } catch (err) {
     next(err)
   }
@@ -468,11 +481,20 @@ router.put('/:date/headline', async (req, res, next) => {
       return res.json({ ok: true })
     }
 
+    // Fetch headline details to satisfy NOT NULL constraints on selected_headlines
+    const { data: hl, error: hlError } = await supabase
+      .from('news_headlines')
+      .select('title, source, url')
+      .eq('id', headlineId)
+      .single()
+
+    if (hlError || !hl) return res.status(404).json({ error: 'Headline not found' })
+
     // Upsert selected headline
     const { error } = await supabase
       .from('selected_headlines')
       .upsert(
-        { user_id: userId, date, headline_id: headlineId },
+        { user_id: userId, date, headline_id: headlineId, title: hl.title, source: hl.source, url: hl.url },
         { onConflict: 'user_id,date', ignoreDuplicates: false }
       )
 
@@ -500,7 +522,7 @@ router.put('/:date/quote', async (req, res, next) => {
     if (text === null || text === undefined || text === '') {
       // Delete the quote
       const { error } = await supabase
-        .from('journal_quotes')
+        .from('quotes')
         .delete()
         .eq('user_id', userId)
         .eq('date', date)
@@ -515,7 +537,7 @@ router.put('/:date/quote', async (req, res, next) => {
 
     // Upsert quote
     const { error } = await supabase
-      .from('journal_quotes')
+      .from('quotes')
       .upsert(
         {
           user_id: userId,

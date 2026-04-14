@@ -5,8 +5,23 @@ import requireAuth from '../middleware/requireAuth.js'
 
 const router = Router()
 
-// All calendar routes require authentication
 router.use(requireAuth)
+
+// Normalize DB row (snake_case) → frontend shape (camelCase)
+function normalizeEvent(row) {
+  return {
+    id: row.id,
+    msEventId: row.ms_event_id,
+    title: row.title,
+    startTime: row.start_time,
+    endTime: row.end_time,
+    isAllDay: row.is_all_day,
+    location: row.location,
+    notes: row.notes,
+    isOnlineMeeting: row.is_online_meeting,
+    meetingUrl: row.meeting_url,
+  }
+}
 
 function isValidDate(dateStr) {
   if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false
@@ -54,7 +69,7 @@ router.get('/events', async (req, res, next) => {
       if (cachedError) return next(new Error(cachedError.message))
 
       if (cachedEvents && cachedEvents.length > 0) {
-        return res.json({ events: cachedEvents, cached: true })
+        return res.json({ events: cachedEvents.map(normalizeEvent), cached: true })
       }
     }
 

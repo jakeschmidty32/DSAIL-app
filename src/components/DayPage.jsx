@@ -1,26 +1,22 @@
 import { useJournalDay } from '../hooks/useJournalDay.js'
-import { formatDisplay, fromDateStr, isToday, toDateStr } from '../lib/dates.js'
+import { fromDateStr, isToday, format } from '../lib/dates.js'
 import { QuoteSection } from './QuoteSection.jsx'
 import { WeatherCard } from './WeatherCard.jsx'
-import { EventTimeline } from './EventTimeline.jsx'
 import { NewsSection } from './NewsSection.jsx'
-import { NotesSection } from './NotesSection.jsx'
+import { HourlyTimeline } from './HourlyTimeline.jsx'
 
-function SectionCard({ title, children }) {
+function SectionDivider({ label }) {
   return (
-    <section className="space-y-2">
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 px-1">
-        {title}
-      </h2>
-      {children}
-    </section>
+    <div className="flex items-center gap-3 mt-8 mb-3">
+      <span className="font-journal text-xs tracking-widest uppercase text-stone-400 shrink-0">{label}</span>
+      <div className="flex-1 h-px bg-stone-200" />
+    </div>
   )
 }
 
 export function DayPage({ date, user, calendarConnected, onBack }) {
   const {
     loading,
-    error,
     events,
     eventsLoading,
     weather,
@@ -32,7 +28,6 @@ export function DayPage({ date, user, calendarConnected, onBack }) {
     notes,
     notesLoading,
     quote,
-    refresh,
     addNote,
     updateNote,
     deleteNote,
@@ -48,99 +43,56 @@ export function DayPage({ date, user, calendarConnected, onBack }) {
     weatherError !== 'no_location' && (weather !== null || weatherLoading)
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-white border-b border-gray-100 shadow-sm">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-1 text-gray-500 hover:text-indigo-600 transition-colors duration-150 text-sm font-medium shrink-0"
-            aria-label="Go back"
-          >
-            ← Back
-          </button>
-
-          <div className="flex-1 min-w-0">
-            <h1 className="text-base font-semibold text-gray-900 truncate">
-              {formatDisplay(dateObj)}
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            {todayFlag && (
-              <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">
-                Today
-              </span>
-            )}
-            <button
-              onClick={refresh}
-              title="Refresh all data"
-              className="p-2 border border-gray-200 text-gray-500 rounded-lg hover:bg-gray-50 transition-colors duration-150 text-sm"
-              aria-label="Refresh"
-            >
-              ↻
-            </button>
-          </div>
+    <div>
+      {/* Journal page body */}
+      <div
+        className="max-w-2xl mx-auto px-6 pb-20"
+        style={{ backgroundColor: '#fdf8f0', minHeight: 'calc(100vh - 57px)' }}
+      >
+        {/* Date header */}
+        <div className="text-center pt-8 pb-4 border-b border-stone-200 mb-2">
+          <p className="font-cursive text-stone-400 text-lg tracking-wide">
+            {format(dateObj, 'EEEE')}
+          </p>
+          <h1 className="font-cursive font-bold text-stone-800" style={{ fontSize: '3rem', lineHeight: 1.1 }}>
+            {format(dateObj, 'MMMM d, yyyy')}
+          </h1>
+          {todayFlag && (
+            <span className="mt-1 inline-block text-xs tracking-widest text-indigo-400 uppercase font-medium">Today</span>
+          )}
         </div>
-      </header>
 
-      {/* Main content */}
-      <main className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+        {/* Weather — prominent, right under the date */}
+        <WeatherCard weather={weather} loading={weatherLoading} locationSet={locationSet} />
+
         {/* Quote */}
-        <SectionCard title="Quote">
-          <QuoteSection
-            quote={quote}
-            loading={loading}
-            onSave={saveQuote}
-          />
-        </SectionCard>
+        <QuoteSection quote={quote} loading={loading} onSave={saveQuote} />
 
-        {/* Weather + Events — side by side on desktop */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <SectionCard title="Weather">
-            <WeatherCard
-              weather={weather}
-              loading={weatherLoading}
-              locationSet={locationSet}
-            />
-          </SectionCard>
+        {/* Calendar + Notes (hourly timeline) */}
+        <SectionDivider label="Calendar" />
+        <HourlyTimeline
+          events={events}
+          notes={notes}
+          eventsLoading={eventsLoading}
+          notesLoading={notesLoading}
+          calendarConnected={calendarConnected}
+          onAdd={addNote}
+          onUpdate={updateNote}
+          onDelete={deleteNote}
+          onPin={pinNote}
+          onRefresh={refreshCalendar}
+        />
 
-          <SectionCard title="Events">
-            <div className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">
-              <EventTimeline
-                events={events}
-                loading={eventsLoading}
-                calendarConnected={calendarConnected}
-                onRefresh={refreshCalendar}
-              />
-            </div>
-          </SectionCard>
-        </div>
-
-        {/* News */}
-        <SectionCard title="Headlines">
-          <NewsSection
-            headlines={headlines}
-            selectedHeadlineId={selectedHeadlineId}
-            loading={headlinesLoading}
-            onSelect={selectHeadline}
-            date={date}
-          />
-        </SectionCard>
-
-        {/* Notes */}
-        <SectionCard title="Notes">
-          <NotesSection
-            notes={notes}
-            loading={notesLoading}
-            date={date}
-            onAdd={addNote}
-            onUpdate={updateNote}
-            onDelete={deleteNote}
-            onPin={pinNote}
-          />
-        </SectionCard>
-      </main>
+        {/* Headlines */}
+        <SectionDivider label="Headlines" />
+        <NewsSection
+          headlines={headlines}
+          selectedHeadlineId={selectedHeadlineId}
+          loading={headlinesLoading}
+          onSelect={selectHeadline}
+          date={date}
+        />
+      </div>
     </div>
   )
 }

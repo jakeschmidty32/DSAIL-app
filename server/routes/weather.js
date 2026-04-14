@@ -7,6 +7,22 @@ const router = Router()
 
 router.use(requireAuth)
 
+// Normalize DB row (snake_case) → frontend shape (camelCase)
+function normalizeWeather(row) {
+  return {
+    date: row.date,
+    locationName: row.location_name,
+    temperatureMax: row.temperature_max,
+    temperatureMin: row.temperature_min,
+    temperatureUnit: row.temperature_unit,
+    condition: row.condition,
+    precipitation: row.precipitation,
+    windSpeed: row.wind_speed,
+    uvIndex: row.uv_index,
+    weatherCode: row.weather_code,
+  }
+}
+
 function isValidDate(dateStr) {
   if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false
   const d = new Date(dateStr)
@@ -34,7 +50,7 @@ router.get('/', async (req, res, next) => {
     if (cacheError) return next(new Error(cacheError.message))
 
     if (cached) {
-      return res.json({ weather: cached })
+      return res.json({ weather: normalizeWeather(cached) })
     }
 
     // Fetch from Open-Meteo
