@@ -18,10 +18,10 @@ const C = {
 
 function SectionDivider({ label }) {
   return (
-    <div className="flex items-center gap-3 mt-8 mb-3">
+    <div className="flex items-center gap-4 mt-10 mb-4">
       <span
-        className="font-optima text-xs tracking-widest uppercase shrink-0"
-        style={{ color: C.textMuted }}
+        className="font-optima font-bold text-lg tracking-widest uppercase shrink-0"
+        style={{ color: 'rgba(210,215,245,0.88)' }}
       >
         {label}
       </span>
@@ -69,7 +69,7 @@ export function DayPage({ date, user, calendarConnected, onBack, onNavigate }) {
 
   return (
     <div style={{ background: C.bg, minHeight: 'calc(100vh - 57px)' }}>
-      <div className="max-w-2xl mx-auto px-5 pb-24">
+      <div className="max-w-7xl mx-auto px-8 pb-24">
 
         {/* ── Day navigation ── */}
         <div className="flex items-center justify-between pt-5 pb-3">

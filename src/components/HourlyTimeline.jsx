@@ -27,12 +27,12 @@ function EventChip({ event, onDelete }) {
   const start = event.startTime ? formatTime(event.startTime) : ''
   const end = event.endTime ? formatTime(event.endTime) : ''
   return (
-    <div className="mb-1.5 pl-2 border-l-2 border-indigo-400 group relative">
-      <p className="font-journal text-sm leading-snug" style={{ color: 'rgba(220,220,240,0.9)' }}>{event.title}</p>
+    <div className="mb-2 pl-3 border-l-2 border-indigo-400 group relative">
+      <p className="font-journal text-base font-semibold leading-snug" style={{ color: 'rgba(225,225,245,0.95)' }}>{event.title}</p>
       {(start || end) && (
-        <p className="text-xs" style={{ color: 'rgba(150,150,180,0.7)' }}>{start}{end ? ` – ${end}` : ''}</p>
+        <p className="text-sm" style={{ color: 'rgba(160,160,190,0.8)' }}>{start}{end ? ` – ${end}` : ''}</p>
       )}
-      {event.location && <p className="text-xs italic" style={{ color: 'rgba(150,150,180,0.7)' }}>📍 {event.location}</p>}
+      {event.location && <p className="text-sm italic" style={{ color: 'rgba(160,160,190,0.8)' }}>📍 {event.location}</p>}
       {event.isOnlineMeeting && event.meetingUrl && (
         <a href={event.meetingUrl} target="_blank" rel="noopener noreferrer"
            className="text-xs text-indigo-400 hover:underline">Join meeting →</a>
@@ -78,7 +78,7 @@ function NoteChip({ note, onUpdate, onDelete, onPin }) {
         </div>
       ) : (
         <div className="flex items-start gap-1">
-          <p className="font-journal text-sm leading-snug flex-1 whitespace-pre-wrap" style={{ color: 'rgba(210,210,235,0.85)' }}>{note.content}</p>
+          <p className="font-journal text-base leading-snug flex-1 whitespace-pre-wrap" style={{ color: 'rgba(215,215,240,0.9)' }}>{note.content}</p>
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
             <button onClick={() => onPin(note.id, !note.isPinned)} className="text-xs text-amber-400/50 hover:text-amber-400" title="Pin">📌</button>
             <button onClick={() => setEditing(true)} className="text-xs hover:text-indigo-400" style={{ color: 'rgba(150,150,180,0.5)' }} title="Edit">✏️</button>
@@ -189,8 +189,8 @@ export function HourlyTimeline({ events, notes, eventsLoading, notesLoading, cal
       )}
 
       {!calendarConnected && (
-        <p className="font-journal text-xs text-stone-400 italic mb-4">
-          <a href="/api/auth/connect" className="text-indigo-500 hover:underline">Connect Google Calendar</a> to see events here.
+        <p className="font-journal text-base italic mb-4" style={{ color: 'rgba(160,160,190,0.7)' }}>
+          <a href="/api/auth/connect" className="text-indigo-400 hover:underline">Connect Google Calendar</a> to see events here.
         </p>
       )}
 
@@ -208,10 +208,10 @@ export function HourlyTimeline({ events, notes, eventsLoading, notesLoading, cal
             const hourNotes = notesByHour[h] || []
             const isEmpty = hourEvents.length === 0 && hourNotes.length === 0
             return (
-              <div key={h} className={`flex gap-3 py-2 min-h-[2.5rem] transition-opacity ${isEmpty ? 'opacity-40 hover:opacity-100' : ''}`}>
+              <div key={h} className={`flex gap-4 py-3 min-h-[3rem] transition-opacity ${isEmpty ? 'opacity-40 hover:opacity-100' : ''}`}>
                 {/* Time label */}
-                <div className="w-16 shrink-0 text-right pt-0.5">
-                  <span className="font-journal text-xs" style={{ color: 'rgba(120,120,160,0.6)' }}>{hourLabel(h)}</span>
+                <div className="w-24 shrink-0 text-right pt-0.5">
+                  <span className="font-optima font-bold text-base" style={{ color: 'rgba(210,215,245,0.85)' }}>{hourLabel(h)}</span>
                 </div>
                 {/* Content */}
                 <div className="flex-1 min-w-0">
