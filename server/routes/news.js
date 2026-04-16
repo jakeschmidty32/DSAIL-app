@@ -4,13 +4,22 @@ import { fetchTopHeadlines } from '../lib/news.js'
 import requireAuth from '../middleware/requireAuth.js'
 
 const router = Router()
-
 router.use(requireAuth)
 
 function isValidDate(dateStr) {
   if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false
   const d = new Date(dateStr)
   return !isNaN(d.getTime())
+}
+
+// Deduplicate an array of headline rows by title (guards against double-insert races)
+function dedupByTitle(rows) {
+  const seen = new Set()
+  return rows.filter((h) => {
+    if (seen.has(h.title)) return false
+    seen.add(h.title)
+    return true
+  })
 }
 
 // GET /api/news?date=YYYY-MM-DD
@@ -23,7 +32,7 @@ router.get('/', async (req, res, next) => {
       return res.status(400).json({ error: 'Missing or invalid date parameter' })
     }
 
-    // Check cache — if 3 headlines already stored, return them
+    // Load whatever is cached for this date
     const { data: cached, error: cacheError } = await supabase
       .from('news_headlines')
       .select('*')
@@ -33,8 +42,10 @@ router.get('/', async (req, res, next) => {
 
     if (cacheError) return next(new Error(cacheError.message))
 
-    if (cached && cached.length >= 3) {
-      // Also fetch selected headline
+    // If we already have headlines, return them (deduplicated in case of race-condition double-insert)
+    if (cached && cached.length > 0) {
+      const unique = dedupByTitle(cached)
+
       const { data: selected } = await supabase
         .from('selected_headlines')
         .select('headline_id')
@@ -43,12 +54,12 @@ router.get('/', async (req, res, next) => {
         .maybeSingle()
 
       return res.json({
-        headlines: cached,
+        headlines: unique,
         selectedHeadlineId: selected?.headline_id || null,
       })
     }
 
-    // Fetch from RSS feeds
+    // Nothing cached — fetch from RSS feeds (4 sources, one article each)
     const headlines = await fetchTopHeadlines()
 
     if (headlines.length > 0) {
@@ -69,7 +80,7 @@ router.get('/', async (req, res, next) => {
       if (insertError) return next(new Error(`news_headlines insert failed: ${insertError.message}`))
     }
 
-    // Re-fetch the newly inserted rows so we return DB records with IDs
+    // Re-fetch so we return DB records with their UUIDs
     const { data: inserted, error: fetchError } = await supabase
       .from('news_headlines')
       .select('*')
@@ -79,7 +90,6 @@ router.get('/', async (req, res, next) => {
 
     if (fetchError) return next(new Error(fetchError.message))
 
-    // Fetch selected headline
     const { data: selected } = await supabase
       .from('selected_headlines')
       .select('headline_id')
@@ -88,7 +98,7 @@ router.get('/', async (req, res, next) => {
       .maybeSingle()
 
     return res.json({
-      headlines: inserted || [],
+      headlines: dedupByTitle(inserted || []),
       selectedHeadlineId: selected?.headline_id || null,
     })
   } catch (err) {
