@@ -9,6 +9,7 @@ import weatherRouter from './routes/weather.js'
 import newsRouter from './routes/news.js'
 import journalRouter from './routes/journal.js'
 import settingsRouter from './routes/settings.js'
+import marketRouter from './routes/market.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -41,6 +42,7 @@ app.use('/api/weather', weatherRouter)
 app.use('/api/news', newsRouter)
 app.use('/api/journal', journalRouter)
 app.use('/api/settings', settingsRouter)
+app.use('/api/market', marketRouter)
 
 // Global error handler
 // eslint-disable-next-line no-unused-vars

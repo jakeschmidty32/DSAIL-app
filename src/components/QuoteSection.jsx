@@ -1,6 +1,14 @@
 import { useState } from 'react'
-import { Skeleton } from './ui/Skeleton.jsx'
 import { useVoice } from '../hooks/useVoice.js'
+
+const C = {
+  textPrimary: 'rgba(220,220,245,0.88)',
+  textMuted: 'rgba(130,130,170,0.7)',
+  inputBg: 'rgba(255,255,255,0.06)',
+  inputBorder: 'rgba(255,255,255,0.1)',
+  cardBg: 'rgba(255,255,255,0.04)',
+  cardBorder: 'rgba(255,255,255,0.08)',
+}
 
 export function QuoteSection({ quote, loading, onSave }) {
   const [showForm, setShowForm] = useState(false)
@@ -31,56 +39,65 @@ export function QuoteSection({ quote, loading, onSave }) {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-gray-100 bg-white shadow-sm p-4 space-y-2">
-        <Skeleton className="w-3/4 h-5" />
-        <Skeleton className="w-1/3 h-3" />
+      <div className="space-y-2 py-3">
+        <div className="h-4 rounded w-3/4 animate-pulse" style={{ background: 'rgba(255,255,255,0.07)' }} />
+        <div className="h-3 rounded w-1/3 animate-pulse" style={{ background: 'rgba(255,255,255,0.05)' }} />
       </div>
     )
   }
 
   if (showForm) {
     return (
-      <div className="rounded-xl border border-indigo-100 bg-white shadow-sm p-4 space-y-3">
+      <div
+        className="rounded-xl p-4 space-y-3"
+        style={{ background: C.cardBg, border: `1px solid ${C.cardBorder}` }}
+      >
         <textarea
           value={listening ? (transcript || text) : text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Enter quote text…"
           rows={3}
-          className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg p-2 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full text-sm rounded-lg p-2 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          style={{ background: C.inputBg, color: C.textPrimary, border: `1px solid ${C.inputBorder}` }}
           autoFocus
         />
         <input
           value={author}
           onChange={(e) => setAuthor(e.target.value)}
           placeholder="Author (optional)"
-          className="w-full text-sm text-gray-700 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          style={{ background: C.inputBg, color: C.textPrimary, border: `1px solid ${C.inputBorder}` }}
         />
         {supported && (
           <button
             type="button"
             onClick={listening ? stopListening : startListening}
-            className={listening
-              ? 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm bg-red-50 text-red-600 border border-red-200'
-              : 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border border-gray-200 text-gray-600 hover:bg-gray-50'
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm"
+            style={
+              listening
+                ? { background: 'rgba(239,68,68,0.12)', color: '#f87171', border: '1px solid rgba(239,68,68,0.25)' }
+                : { background: 'transparent', color: C.textMuted, border: `1px solid ${C.inputBorder}` }
             }
           >
-            {listening
-              ? <><span className="w-2 h-2 rounded-full bg-red-500 animate-pulse inline-block" /> Recording… tap to stop</>
-              : <>🎤 Dictate quote</>
-            }
+            {listening ? (
+              <><span className="w-2 h-2 rounded-full bg-red-500 animate-pulse inline-block" /> Recording… tap to stop</>
+            ) : (
+              <>🎤 Dictate quote</>
+            )}
           </button>
         )}
         <div className="flex gap-2">
           <button
             onClick={handleSave}
             disabled={!text.trim() || saving}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150"
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-40 transition-colors"
           >
             Save
           </button>
           <button
             onClick={() => setShowForm(false)}
-            className="px-3 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-50 transition-colors duration-150"
+            className="px-3 py-2 rounded-lg text-sm transition-colors"
+            style={{ color: C.textMuted, border: `1px solid ${C.inputBorder}` }}
           >
             Cancel
           </button>
@@ -94,7 +111,8 @@ export function QuoteSection({ quote, loading, onSave }) {
       <div className="flex items-center justify-center py-6">
         <button
           onClick={() => setShowForm(true)}
-          className="text-sm text-gray-400 hover:text-indigo-600 border border-dashed border-gray-200 hover:border-indigo-300 rounded-xl px-6 py-3 transition-colors duration-150"
+          className="text-sm rounded-xl px-6 py-3 transition-colors"
+          style={{ color: C.textMuted, border: `1px dashed rgba(255,255,255,0.15)` }}
         >
           + Add a quote for today
         </button>
@@ -103,16 +121,20 @@ export function QuoteSection({ quote, loading, onSave }) {
   }
 
   return (
-    <div className="rounded-xl border border-gray-100 bg-white shadow-sm p-5 relative group">
-      <blockquote className="text-base italic text-gray-700 leading-relaxed">
+    <div
+      className="rounded-xl p-5 relative group"
+      style={{ background: C.cardBg, border: `1px solid ${C.cardBorder}` }}
+    >
+      <blockquote className="text-base italic leading-relaxed" style={{ color: C.textPrimary }}>
         &ldquo;{quote.text}&rdquo;
       </blockquote>
       {quote.author && (
-        <p className="mt-2 text-sm text-gray-500 font-medium">— {quote.author}</p>
+        <p className="mt-2 text-sm font-medium" style={{ color: C.textMuted }}>— {quote.author}</p>
       )}
       <button
         onClick={openEdit}
-        className="absolute top-3 right-3 text-gray-300 hover:text-indigo-500 opacity-0 group-hover:opacity-100 transition-all duration-150 text-sm"
+        className="absolute top-3 right-3 text-sm opacity-0 group-hover:opacity-100 transition-all"
+        style={{ color: C.textMuted }}
         title="Edit quote"
       >
         ✏️

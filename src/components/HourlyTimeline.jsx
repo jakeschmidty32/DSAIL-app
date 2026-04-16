@@ -22,19 +22,33 @@ function getNoteHour(createdAt) {
   return isNaN(d.getTime()) ? null : d.getHours()
 }
 
-function EventChip({ event }) {
+function EventChip({ event, onDelete }) {
+  const [confirm, setConfirm] = useState(false)
   const start = event.startTime ? formatTime(event.startTime) : ''
   const end = event.endTime ? formatTime(event.endTime) : ''
   return (
-    <div className="mb-1.5 pl-2 border-l-2 border-indigo-300">
-      <p className="font-journal text-sm text-stone-800 leading-snug">{event.title}</p>
+    <div className="mb-1.5 pl-2 border-l-2 border-indigo-400 group relative">
+      <p className="font-journal text-sm leading-snug" style={{ color: 'rgba(220,220,240,0.9)' }}>{event.title}</p>
       {(start || end) && (
-        <p className="text-xs text-stone-400">{start}{end ? ` – ${end}` : ''}</p>
+        <p className="text-xs" style={{ color: 'rgba(150,150,180,0.7)' }}>{start}{end ? ` – ${end}` : ''}</p>
       )}
-      {event.location && <p className="text-xs text-stone-400 italic">📍 {event.location}</p>}
+      {event.location && <p className="text-xs italic" style={{ color: 'rgba(150,150,180,0.7)' }}>📍 {event.location}</p>}
       {event.isOnlineMeeting && event.meetingUrl && (
         <a href={event.meetingUrl} target="_blank" rel="noopener noreferrer"
-           className="text-xs text-indigo-500 hover:underline">Join meeting →</a>
+           className="text-xs text-indigo-400 hover:underline">Join meeting →</a>
+      )}
+      {/* Delete button */}
+      {onDelete && (
+        <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+          {confirm ? (
+            <>
+              <button onClick={() => onDelete(event.id)} className="text-xs text-red-400">Remove</button>
+              <button onClick={() => setConfirm(false)} className="text-xs" style={{ color: 'rgba(150,150,180,0.7)' }}>Keep</button>
+            </>
+          ) : (
+            <button onClick={() => setConfirm(true)} className="text-xs" style={{ color: 'rgba(150,150,180,0.4)' }} title="Remove from journal">✕</button>
+          )}
+        </div>
       )}
     </div>
   )
@@ -50,25 +64,27 @@ function NoteChip({ note, onUpdate, onDelete, onPin }) {
   }
 
   return (
-    <div className={`mb-1.5 pl-2 border-l-2 ${note.isPinned ? 'border-amber-400' : 'border-stone-200'} group`}>
+    <div className={`mb-1.5 pl-2 border-l-2 group ${note.isPinned ? 'border-amber-400' : 'border-white/20'}`}>
       {editing ? (
         <div className="space-y-1">
           <textarea value={val} onChange={e => setVal(e.target.value)} rows={2}
-            className="w-full text-xs border border-stone-200 rounded p-1.5 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-400" autoFocus />
+            className="w-full text-xs rounded p-1.5 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-400"
+            style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(220,220,240,0.9)', border: '1px solid rgba(255,255,255,0.12)' }}
+            autoFocus />
           <div className="flex gap-2">
-            <button onClick={save} className="text-xs text-indigo-600 hover:underline">Save</button>
-            <button onClick={() => { setVal(note.content); setEditing(false) }} className="text-xs text-stone-400 hover:underline">Cancel</button>
+            <button onClick={save} className="text-xs text-indigo-400 hover:underline">Save</button>
+            <button onClick={() => { setVal(note.content); setEditing(false) }} className="text-xs" style={{ color: 'rgba(150,150,180,0.6)' }}>Cancel</button>
           </div>
         </div>
       ) : (
         <div className="flex items-start gap-1">
-          <p className="font-journal text-sm text-stone-700 leading-snug flex-1 whitespace-pre-wrap">{note.content}</p>
+          <p className="font-journal text-sm leading-snug flex-1 whitespace-pre-wrap" style={{ color: 'rgba(210,210,235,0.85)' }}>{note.content}</p>
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-            <button onClick={() => onPin(note.id, !note.isPinned)} className="text-xs text-stone-300 hover:text-amber-500" title="Pin">📌</button>
-            <button onClick={() => setEditing(true)} className="text-xs text-stone-300 hover:text-stone-600" title="Edit">✏️</button>
+            <button onClick={() => onPin(note.id, !note.isPinned)} className="text-xs text-amber-400/50 hover:text-amber-400" title="Pin">📌</button>
+            <button onClick={() => setEditing(true)} className="text-xs hover:text-indigo-400" style={{ color: 'rgba(150,150,180,0.5)' }} title="Edit">✏️</button>
             {confirm
-              ? <><button onClick={() => onDelete(note.id)} className="text-xs text-red-500">Yes</button><button onClick={() => setConfirm(false)} className="text-xs text-stone-400">No</button></>
-              : <button onClick={() => setConfirm(true)} className="text-xs text-stone-300 hover:text-red-400" title="Delete">🗑️</button>
+              ? <><button onClick={() => onDelete(note.id)} className="text-xs text-red-400">Yes</button><button onClick={() => setConfirm(false)} className="text-xs" style={{ color: 'rgba(150,150,180,0.5)' }}>No</button></>
+              : <button onClick={() => setConfirm(true)} className="text-xs hover:text-red-400" style={{ color: 'rgba(150,150,180,0.4)' }} title="Delete">🗑️</button>
             }
           </div>
         </div>
@@ -78,7 +94,7 @@ function NoteChip({ note, onUpdate, onDelete, onPin }) {
   )
 }
 
-function AddNoteInline({ onAdd }) {
+function AddNoteInline({ onAdd, targetHour }) {
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
   const { listening, transcript, startListening, stopListening, supported } = useVoice(result => setText(result))
@@ -86,7 +102,7 @@ function AddNoteInline({ onAdd }) {
   async function submit(isVoice = false) {
     const content = (isVoice ? transcript : text).trim()
     if (!content) return
-    await onAdd(content, isVoice)
+    await onAdd(content, isVoice, targetHour)
     setText('')
     setOpen(false)
   }
@@ -94,7 +110,10 @@ function AddNoteInline({ onAdd }) {
   if (!open) {
     return (
       <button onClick={() => setOpen(true)}
-        className="text-xs text-stone-300 hover:text-indigo-400 transition-colors leading-none mt-0.5">
+        className="text-xs transition-colors leading-none mt-0.5"
+        style={{ color: 'rgba(120,120,160,0.5)' }}
+        onMouseEnter={e => e.target.style.color = 'rgba(129,140,248,0.8)'}
+        onMouseLeave={e => e.target.style.color = 'rgba(120,120,160,0.5)'}>
         + note
       </button>
     )
@@ -108,7 +127,8 @@ function AddNoteInline({ onAdd }) {
         rows={2}
         placeholder="Write a note…"
         autoFocus
-        className="w-full text-xs border border-stone-200 rounded p-1.5 resize-none bg-white/80 focus:outline-none focus:ring-1 focus:ring-indigo-300"
+        className="w-full text-xs rounded p-1.5 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-400"
+        style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(220,220,240,0.9)', border: '1px solid rgba(255,255,255,0.12)' }}
         onKeyDown={e => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); submit() } }}
       />
       <div className="flex gap-2 flex-wrap">
@@ -116,20 +136,19 @@ function AddNoteInline({ onAdd }) {
           className="text-xs bg-indigo-600 text-white px-2.5 py-1 rounded hover:bg-indigo-700 disabled:opacity-40">Add</button>
         {supported && (
           <button onClick={listening ? () => { stopListening(); if (transcript) submit(true) } : startListening}
-            className={`text-xs px-2.5 py-1 rounded border ${listening ? 'bg-red-50 text-red-600 border-red-200' : 'text-stone-600 border-stone-200 hover:bg-stone-50'}`}>
+            className={`text-xs px-2.5 py-1 rounded border ${listening ? 'border-red-500/50 text-red-400' : 'text-slate-400 border-white/15 hover:border-white/25'}`}>
             {listening ? <><span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse mr-1" />Stop</> : '🎤'}
           </button>
         )}
         <button onClick={() => { setOpen(false); setText('') }}
-          className="text-xs text-stone-400 hover:text-stone-600">Cancel</button>
-        <span className="text-xs text-stone-300 self-center hidden sm:inline">⌘↵ to add</span>
+          className="text-xs" style={{ color: 'rgba(150,150,180,0.5)' }}>Cancel</button>
       </div>
     </div>
   )
 }
 
 export function HourlyTimeline({ events, notes, eventsLoading, notesLoading, calendarConnected,
-                                  onAdd, onUpdate, onDelete, onPin, onRefresh }) {
+                                  onAdd, onUpdate, onDelete, onPin, onDeleteEvent, onRefresh }) {
   // Group timed events by their start hour
   const eventsByHour = {}
   const allDayEvents = []
@@ -161,7 +180,8 @@ export function HourlyTimeline({ events, notes, eventsLoading, notesLoading, cal
         <div className="flex flex-wrap gap-1.5 mb-4">
           {allDayEvents.map(e => (
             <span key={e.id || e.msEventId}
-              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-stone-100 text-stone-600 border border-stone-200 font-journal">
+              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium font-journal"
+              style={{ background: 'rgba(99,102,241,0.15)', color: 'rgba(165,170,255,0.9)', border: '1px solid rgba(99,102,241,0.25)' }}>
               {e.title}
             </span>
           ))}
@@ -178,28 +198,28 @@ export function HourlyTimeline({ events, notes, eventsLoading, notesLoading, cal
       {loading ? (
         <div className="space-y-2">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-8 bg-stone-100 animate-pulse rounded" />
+            <div key={i} className="h-8 animate-pulse rounded" style={{ background: 'rgba(255,255,255,0.06)' }} />
           ))}
         </div>
       ) : (
-        <div className="divide-y divide-stone-100">
+        <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
           {HOURS.map(h => {
             const hourEvents = eventsByHour[h] || []
             const hourNotes = notesByHour[h] || []
             const isEmpty = hourEvents.length === 0 && hourNotes.length === 0
             return (
-              <div key={h} className={`flex gap-3 py-2 min-h-[2.5rem] ${isEmpty ? 'opacity-60 hover:opacity-100' : ''} transition-opacity`}>
+              <div key={h} className={`flex gap-3 py-2 min-h-[2.5rem] transition-opacity ${isEmpty ? 'opacity-40 hover:opacity-100' : ''}`}>
                 {/* Time label */}
                 <div className="w-16 shrink-0 text-right pt-0.5">
-                  <span className="font-journal text-xs text-stone-400">{hourLabel(h)}</span>
+                  <span className="font-journal text-xs" style={{ color: 'rgba(120,120,160,0.6)' }}>{hourLabel(h)}</span>
                 </div>
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                  {hourEvents.map(e => <EventChip key={e.id || e.msEventId} event={e} />)}
+                  {hourEvents.map(e => <EventChip key={e.id || e.msEventId} event={e} onDelete={onDeleteEvent} />)}
                   {hourNotes.map(n => (
                     <NoteChip key={n.id} note={n} onUpdate={onUpdate} onDelete={onDelete} onPin={onPin} />
                   ))}
-                  <AddNoteInline onAdd={(content, isVoice) => onAdd(content, isVoice)} />
+                  <AddNoteInline onAdd={(content, isVoice, hour) => onAdd(content, isVoice, hour)} targetHour={h} />
                 </div>
               </div>
             )
@@ -210,7 +230,8 @@ export function HourlyTimeline({ events, notes, eventsLoading, notesLoading, cal
       {/* Refresh calendar button */}
       {calendarConnected && onRefresh && (
         <button onClick={onRefresh}
-          className="mt-3 text-xs text-stone-400 hover:text-indigo-500 transition-colors">
+          className="mt-3 text-xs transition-colors"
+          style={{ color: 'rgba(120,120,160,0.5)' }}>
           ↻ Refresh calendar
         </button>
       )}

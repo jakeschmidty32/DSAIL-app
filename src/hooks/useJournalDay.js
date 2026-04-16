@@ -100,19 +100,26 @@ export function useJournalDay(date) {
 
   // Mutators
 
-  async function addNote(content, isVoice = false) {
+  async function addNote(content, isVoice = false, targetHour = null) {
     const tempId = `temp-${Date.now()}`
+    // Build a createdAt timestamp for the target hour so the note lands in the right row
+    let createdAt = new Date().toISOString()
+    if (targetHour !== null && targetHour !== undefined) {
+      const d = new Date()
+      d.setHours(targetHour, 30, 0, 0)
+      createdAt = d.toISOString()
+    }
     const tempNote = {
       id: tempId,
       content,
       isVoice,
       isPinned: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt,
+      updatedAt: createdAt,
     }
     patch({ notes: [tempNote, ...state.notes] })
     try {
-      const data = await api.journal.addNote(date, { content, isVoice })
+      const data = await api.journal.addNote(date, { content, isVoice, createdAt })
       setState((prev) => ({
         ...prev,
         notes: prev.notes.map((n) => (n.id === tempId ? data.note : n)),
@@ -157,6 +164,16 @@ export function useJournalDay(date) {
 
   async function pinNote(id, isPinned) {
     return updateNote(id, { isPinned })
+  }
+
+  async function deleteEvent(id) {
+    const prevEvents = state.events
+    setState((s) => ({ ...s, events: s.events.filter((e) => e.id !== id) }))
+    try {
+      await api.calendar.deleteEvent(id)
+    } catch {
+      setState((s) => ({ ...s, events: prevEvents }))
+    }
   }
 
   async function selectHeadline(headlineId) {
@@ -206,6 +223,7 @@ export function useJournalDay(date) {
     updateNote,
     deleteNote,
     pinNote,
+    deleteEvent,
     selectHeadline,
     saveQuote,
     refreshCalendar,

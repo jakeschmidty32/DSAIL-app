@@ -1,6 +1,14 @@
-const SOURCE_COLORS = [
-  'text-indigo-600', 'text-sky-600', 'text-emerald-600', 'text-rose-600', 'text-amber-600',
-]
+const C = {
+  textPrimary: 'rgba(220,220,245,0.9)',
+  textMuted: 'rgba(130,130,170,0.7)',
+  cardBg: 'rgba(255,255,255,0.04)',
+  cardBorder: 'rgba(255,255,255,0.08)',
+  cardHoverBg: 'rgba(255,255,255,0.07)',
+  selectedBg: 'rgba(99,102,241,0.12)',
+  selectedBorder: 'rgba(99,102,241,0.4)',
+}
+
+const SOURCE_COLORS = ['#818cf8', '#38bdf8', '#34d399', '#fb923c', '#e879f9']
 function sourceColor(source = '') {
   let h = 0
   for (let i = 0; i < source.length; i++) h = source.charCodeAt(i) + h * 31
@@ -11,26 +19,29 @@ function HeadlineCard({ h, isSelected, onSelect }) {
   return (
     <div
       onClick={() => onSelect(isSelected ? null : h.id)}
-      className={[
-        'relative rounded-xl border bg-white p-4 cursor-pointer transition-all duration-150 flex flex-col gap-2',
-        isSelected
-          ? 'ring-2 ring-indigo-500 border-indigo-200 shadow-md'
-          : 'border-stone-200 hover:border-stone-300 hover:shadow-sm',
-      ].join(' ')}
+      className="relative rounded-xl p-4 cursor-pointer transition-all duration-150 flex flex-col gap-2"
+      style={{
+        background: isSelected ? C.selectedBg : C.cardBg,
+        border: `1px solid ${isSelected ? C.selectedBorder : C.cardBorder}`,
+      }}
     >
       {isSelected && (
-        <div className="absolute top-3 right-3 w-5 h-5 bg-indigo-600 rounded-full flex items-center justify-center">
+        <div
+          className="absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center"
+          style={{ background: '#4f46e5' }}
+        >
           <span className="text-white text-xs leading-none">✓</span>
         </div>
       )}
-      <p className={`text-xs font-semibold uppercase tracking-wide ${sourceColor(h.source)}`}>
+      <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: sourceColor(h.source) }}>
         {h.source}
       </p>
-      {/* Full title — no line-clamp so it's always fully visible */}
-      <p className="text-sm font-semibold text-stone-800 leading-snug flex-1">{h.title}</p>
+      <p className="text-sm font-semibold leading-snug flex-1" style={{ color: C.textPrimary }}>
+        {h.title}
+      </p>
       <div className="flex items-center justify-between pt-1">
         {isSelected && (
-          <span className="text-xs text-indigo-600 font-medium">Saved to journal</span>
+          <span className="text-xs font-medium" style={{ color: 'rgba(129,140,248,0.8)' }}>Saved to journal</span>
         )}
         {h.url && (
           <a
@@ -38,7 +49,8 @@ function HeadlineCard({ h, isSelected, onSelect }) {
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="ml-auto text-xs text-stone-400 hover:text-indigo-600 transition-colors"
+            className="ml-auto text-xs transition-colors hover:underline"
+            style={{ color: C.textMuted }}
           >
             Read →
           </a>
@@ -53,10 +65,10 @@ export function NewsSection({ headlines, selectedHeadlineId, loading, onSelect }
     return (
       <div className="space-y-3">
         {[0, 1, 2].map((i) => (
-          <div key={i} className="rounded-xl border border-stone-100 bg-white p-4 space-y-2">
-            <div className="h-3 bg-stone-100 animate-pulse rounded w-1/4" />
-            <div className="h-4 bg-stone-100 animate-pulse rounded w-full" />
-            <div className="h-4 bg-stone-100 animate-pulse rounded w-5/6" />
+          <div key={i} className="rounded-xl p-4 space-y-2" style={{ background: C.cardBg, border: `1px solid ${C.cardBorder}` }}>
+            <div className="h-3 rounded w-1/4 animate-pulse" style={{ background: 'rgba(255,255,255,0.08)' }} />
+            <div className="h-4 rounded w-full animate-pulse" style={{ background: 'rgba(255,255,255,0.06)' }} />
+            <div className="h-4 rounded w-5/6 animate-pulse" style={{ background: 'rgba(255,255,255,0.06)' }} />
           </div>
         ))}
       </div>
@@ -65,7 +77,7 @@ export function NewsSection({ headlines, selectedHeadlineId, loading, onSelect }
 
   if (!headlines || headlines.length === 0) {
     return (
-      <p className="font-journal text-stone-400 italic text-sm py-2">
+      <p className="font-journal text-sm italic py-2" style={{ color: C.textMuted }}>
         No headlines available for this date.
       </p>
     )
@@ -77,10 +89,10 @@ export function NewsSection({ headlines, selectedHeadlineId, loading, onSelect }
   if (selected) {
     return (
       <div className="flex flex-col items-center text-center gap-3 py-4">
-        <p className={`text-xs font-semibold uppercase tracking-widest ${sourceColor(selected.source)}`}>
+        <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: sourceColor(selected.source) }}>
           {selected.source}
         </p>
-        <p className="font-journal text-base text-stone-800 leading-snug max-w-sm">
+        <p className="font-journal text-base leading-snug max-w-sm" style={{ color: C.textPrimary }}>
           {selected.title}
         </p>
         {selected.url && (
@@ -88,14 +100,16 @@ export function NewsSection({ headlines, selectedHeadlineId, loading, onSelect }
             href={selected.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-indigo-500 hover:underline"
+            className="text-xs hover:underline"
+            style={{ color: 'rgba(129,140,248,0.7)' }}
           >
             Read full article →
           </a>
         )}
         <button
           onClick={() => onSelect(null)}
-          className="text-xs text-stone-300 hover:text-stone-500 transition-colors mt-1"
+          className="text-xs mt-1 transition-colors"
+          style={{ color: 'rgba(100,100,140,0.5)' }}
         >
           Change headline
         </button>
@@ -106,7 +120,7 @@ export function NewsSection({ headlines, selectedHeadlineId, loading, onSelect }
   // ── Before selection: show all three ─────────────────────────────────────
   return (
     <div className="space-y-3">
-      <p className="font-journal text-xs text-stone-400 italic">
+      <p className="font-journal text-xs italic" style={{ color: C.textMuted }}>
         Choose one headline to save to this day's journal:
       </p>
       {headlines.map((h) => (

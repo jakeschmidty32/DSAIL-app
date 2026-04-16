@@ -45,46 +45,83 @@ export function CalendarView({ calendarMonth, setCalendarMonth, onSelectDate, se
     ...trailingDays.map(d => ({ date: d, inMonth: false })),
   ]
 
+  const nRows = Math.ceil(allCells.length / 7)
   const selectedParsed = selectedDate ? parseISO(selectedDate) : null
 
+  // Dark theme palette
+  const BG = '#0f0f17'
+  const HEADER_BG = '#13131e'
+  const CELL_FUTURE = '#16161f'
+  const CELL_PAST = '#111119'
+  const CELL_BORDER = 'rgba(255,255,255,0.055)'
+  const TEXT_PRIMARY = 'rgba(225,225,245,0.9)'
+  const TEXT_MUTED = 'rgba(110,110,150,0.7)'
+  const TEXT_GHOST = 'rgba(70,70,100,0.4)'
+
   return (
-    <div className="w-full bg-white shadow-sm">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-6">
+    <div
+      style={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        background: BG,
+        overflow: 'hidden',
+      }}
+    >
+      {/* Month navigation header */}
+      <div
+        className="flex items-center justify-between px-6 py-4 shrink-0"
+        style={{ background: HEADER_BG, borderBottom: `1px solid ${CELL_BORDER}` }}
+      >
         <button
           onClick={() => setCalendarMonth(addMonths(calendarMonth, -1))}
-          className="text-3xl text-stone-300 hover:text-stone-600 transition-colors leading-none"
+          className="transition-colors text-2xl leading-none px-2 py-1 rounded-lg"
+          style={{ color: TEXT_MUTED }}
           aria-label="Previous month"
         >‹</button>
 
         <div className="text-center">
-          <h2 className="font-cursive font-bold text-stone-800 leading-none"
-              style={{ fontSize: 'clamp(2.5rem, 6vw, 4rem)' }}>
+          <h2
+            className="font-optima font-bold leading-none"
+            style={{ fontSize: 'clamp(1.8rem, 5vw, 3rem)', color: TEXT_PRIMARY, letterSpacing: '0.02em' }}
+          >
             {format(calendarMonth, 'MMMM')}
           </h2>
-          <p className="font-journal text-stone-400 text-base tracking-widest mt-1">
+          <p className="font-optima mt-1 tracking-widest text-sm" style={{ color: TEXT_MUTED }}>
             {format(calendarMonth, 'yyyy')}
           </p>
         </div>
 
         <button
           onClick={() => setCalendarMonth(addMonths(calendarMonth, 1))}
-          className="text-3xl text-stone-300 hover:text-stone-600 transition-colors leading-none"
+          className="transition-colors text-2xl leading-none px-2 py-1 rounded-lg"
+          style={{ color: TEXT_MUTED }}
           aria-label="Next month"
         >›</button>
       </div>
 
       {/* Day-of-week headers */}
-      <div className="grid grid-cols-7 border-t border-b border-stone-100">
+      <div
+        className="grid grid-cols-7 shrink-0"
+        style={{ borderBottom: `1px solid ${CELL_BORDER}` }}
+      >
         {DAY_HEADERS.map(h => (
           <div key={h} className="text-center py-2">
-            <span className="font-journal text-xs uppercase tracking-widest text-stone-400">{h}</span>
+            <span
+              className="font-optima text-xs uppercase tracking-widest"
+              style={{ color: TEXT_GHOST }}
+            >
+              {h}
+            </span>
           </div>
         ))}
       </div>
 
-      {/* Day grid */}
-      <div className="grid grid-cols-7">
+      {/* Day grid — fills remaining height equally across all rows */}
+      <div
+        className="flex-1 min-h-0 grid grid-cols-7"
+        style={{ gridTemplateRows: `repeat(${nRows}, 1fr)` }}
+      >
         {allCells.map(({ date, inMonth }) => {
           const dateStr = toDateStr(date)
           const meta = days[dateStr]
@@ -92,37 +129,43 @@ export function CalendarView({ calendarMonth, setCalendarMonth, onSelectDate, se
           const isPast = inMonth && date < today && !todayFlag
           const isSelected = selectedParsed && isSameDay(date, selectedParsed)
 
+          // Cell background
+          let cellBg = CELL_FUTURE
+          if (!inMonth) cellBg = 'transparent'
+          else if (isPast) cellBg = CELL_PAST
+
           const dots = []
-          if (meta?.hasNotes) dots.push('bg-indigo-400')
-          if (meta?.hasEvents) dots.push('bg-sky-400')
-          if (meta?.hasWeather) dots.push('bg-amber-400')
-          if (meta?.hasNews) dots.push('bg-emerald-400')
+          if (meta?.hasNotes) dots.push('#818cf8')   // indigo
+          if (meta?.hasEvents) dots.push('#38bdf8')  // sky
+          if (meta?.hasWeather) dots.push('#fbbf24') // amber
+          if (meta?.hasNews) dots.push('#34d399')    // emerald
 
           return (
             <button
               key={dateStr}
-              onClick={() => onSelectDate(dateStr)}
-              className={[
-                'relative flex flex-col items-start p-2 border border-stone-100 transition-colors duration-100 min-h-[5rem] md:min-h-[7rem]',
-                !inMonth ? 'bg-transparent cursor-default' : '',
-                inMonth && isPast ? 'bg-stone-50' : '',
-                inMonth && !isPast && !todayFlag ? 'hover:bg-indigo-50/40 cursor-pointer' : '',
-                todayFlag ? 'hover:bg-indigo-50/60 cursor-pointer' : '',
-                isSelected && !todayFlag ? 'ring-2 ring-indigo-400 ring-inset' : '',
-              ].filter(Boolean).join(' ')}
+              onClick={() => inMonth && onSelectDate(dateStr)}
+              className="relative flex flex-col items-start p-2 transition-colors duration-100"
+              style={{
+                background: cellBg,
+                border: `1px solid ${CELL_BORDER}`,
+                cursor: inMonth ? 'pointer' : 'default',
+              }}
             >
               {/* Date number */}
               {todayFlag ? (
-                <span className="w-8 h-8 flex items-center justify-center rounded-full bg-indigo-600 text-white font-cursive font-bold text-lg leading-none">
+                <span
+                  className="w-7 h-7 flex items-center justify-center rounded-full font-optima font-bold text-base leading-none"
+                  style={{ background: '#4f46e5', color: '#fff' }}
+                >
                   {format(date, 'd')}
                 </span>
               ) : (
-                <span className={[
-                  'font-cursive font-bold leading-none',
-                  !inMonth ? 'text-stone-200 text-lg' : '',
-                  inMonth && isPast ? 'text-stone-300 text-xl' : '',
-                  inMonth && !isPast ? 'text-stone-700 text-xl' : '',
-                ].filter(Boolean).join(' ')}>
+                <span
+                  className="font-optima font-bold leading-none text-base"
+                  style={{
+                    color: !inMonth ? TEXT_GHOST : isPast ? 'rgba(100,100,140,0.55)' : TEXT_PRIMARY,
+                  }}
+                >
                   {format(date, 'd')}
                 </span>
               )}
@@ -130,10 +173,18 @@ export function CalendarView({ calendarMonth, setCalendarMonth, onSelectDate, se
               {/* Entry dots */}
               {dots.length > 0 && (
                 <div className="flex gap-1 mt-auto pb-0.5">
-                  {dots.map((cls, i) => (
-                    <span key={i} className={`w-1.5 h-1.5 rounded-full ${cls}`} />
+                  {dots.map((color, i) => (
+                    <span key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: color, display: 'inline-block' }} />
                   ))}
                 </div>
+              )}
+
+              {/* Selected ring */}
+              {isSelected && !todayFlag && inMonth && (
+                <span
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ boxShadow: 'inset 0 0 0 2px rgba(99,102,241,0.5)' }}
+                />
               )}
             </button>
           )

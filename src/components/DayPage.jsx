@@ -2,19 +2,41 @@ import { useJournalDay } from '../hooks/useJournalDay.js'
 import { fromDateStr, isToday, format } from '../lib/dates.js'
 import { QuoteSection } from './QuoteSection.jsx'
 import { WeatherCard } from './WeatherCard.jsx'
+import { MarketCard } from './MarketCard.jsx'
 import { NewsSection } from './NewsSection.jsx'
 import { HourlyTimeline } from './HourlyTimeline.jsx'
+
+// ── Colour palette (shared) ────────────────────────────────────────────────────
+const C = {
+  bg: '#0f0f17',
+  divider: 'rgba(255,255,255,0.07)',
+  textPrimary: 'rgba(225,225,245,0.92)',
+  textMuted: 'rgba(130,130,170,0.7)',
+  cardBg: 'rgba(255,255,255,0.04)',
+  cardBorder: 'rgba(255,255,255,0.08)',
+}
 
 function SectionDivider({ label }) {
   return (
     <div className="flex items-center gap-3 mt-8 mb-3">
-      <span className="font-journal text-xs tracking-widest uppercase text-stone-400 shrink-0">{label}</span>
-      <div className="flex-1 h-px bg-stone-200" />
+      <span
+        className="font-optima text-xs tracking-widest uppercase shrink-0"
+        style={{ color: C.textMuted }}
+      >
+        {label}
+      </span>
+      <div className="flex-1 h-px" style={{ background: C.divider }} />
     </div>
   )
 }
 
-export function DayPage({ date, user, calendarConnected, onBack }) {
+function addDays(dateStr, n) {
+  const d = new Date(dateStr + 'T12:00:00Z')
+  d.setUTCDate(d.getUTCDate() + n)
+  return d.toISOString().slice(0, 10)
+}
+
+export function DayPage({ date, user, calendarConnected, onBack, onNavigate }) {
   const {
     loading,
     events,
@@ -32,6 +54,7 @@ export function DayPage({ date, user, calendarConnected, onBack }) {
     updateNote,
     deleteNote,
     pinNote,
+    deleteEvent,
     selectHeadline,
     saveQuote,
     refreshCalendar,
@@ -39,36 +62,72 @@ export function DayPage({ date, user, calendarConnected, onBack }) {
 
   const dateObj = fromDateStr(date)
   const todayFlag = isToday(dateObj)
-  const locationSet =
-    weatherError !== 'no_location' && (weather !== null || weatherLoading)
+  const locationSet = weatherError !== 'no_location' && (weather !== null || weatherLoading)
+
+  const prevDate = addDays(date, -1)
+  const nextDate = addDays(date, 1)
 
   return (
-    <div>
-      {/* Journal page body */}
-      <div
-        className="max-w-2xl mx-auto px-6 pb-20"
-        style={{ backgroundColor: '#fdf8f0', minHeight: 'calc(100vh - 57px)' }}
-      >
-        {/* Date header */}
-        <div className="text-center pt-8 pb-4 border-b border-stone-200 mb-2">
-          <p className="font-cursive text-stone-400 text-lg tracking-wide">
-            {format(dateObj, 'EEEE')}
-          </p>
-          <h1 className="font-cursive font-bold text-stone-800" style={{ fontSize: '3rem', lineHeight: 1.1 }}>
-            {format(dateObj, 'MMMM d, yyyy')}
-          </h1>
-          {todayFlag && (
-            <span className="mt-1 inline-block text-xs tracking-widest text-indigo-400 uppercase font-medium">Today</span>
-          )}
+    <div style={{ background: C.bg, minHeight: 'calc(100vh - 57px)' }}>
+      <div className="max-w-2xl mx-auto px-5 pb-24">
+
+        {/* ── Day navigation ── */}
+        <div className="flex items-center justify-between pt-5 pb-3">
+          <button
+            onClick={() => onNavigate?.(prevDate)}
+            className="flex items-center gap-1 text-sm transition-colors px-2 py-1 rounded-lg"
+            style={{ color: C.textMuted }}
+          >
+            ‹ <span className="hidden sm:inline font-optima">{format(new Date(prevDate + 'T12:00:00Z'), 'MMM d')}</span>
+          </button>
+
+          {/* Date header */}
+          <div className="text-center flex-1 px-2">
+            <p
+              className="font-optima text-sm tracking-widest uppercase"
+              style={{ color: C.textMuted, letterSpacing: '0.12em' }}
+            >
+              {format(dateObj, 'EEEE')}
+            </p>
+            <h1
+              className="font-optima font-bold"
+              style={{ fontSize: 'clamp(1.6rem, 5vw, 2.4rem)', color: C.textPrimary, lineHeight: 1.15, letterSpacing: '0.01em' }}
+            >
+              {format(dateObj, 'MMMM d, yyyy')}
+            </h1>
+            {todayFlag && (
+              <span
+                className="mt-1 inline-block text-xs tracking-widest uppercase font-medium"
+                style={{ color: 'rgba(129,140,248,0.7)' }}
+              >
+                Today
+              </span>
+            )}
+          </div>
+
+          <button
+            onClick={() => onNavigate?.(nextDate)}
+            className="flex items-center gap-1 text-sm transition-colors px-2 py-1 rounded-lg"
+            style={{ color: C.textMuted }}
+          >
+            <span className="hidden sm:inline font-optima">{format(new Date(nextDate + 'T12:00:00Z'), 'MMM d')}</span> ›
+          </button>
         </div>
 
-        {/* Weather — prominent, right under the date */}
-        <WeatherCard weather={weather} loading={weatherLoading} locationSet={locationSet} />
+        {/* ── Weather + Market side by side ── */}
+        <div
+          className="grid grid-cols-2 gap-4 rounded-xl p-4 mb-2"
+          style={{ background: C.cardBg, border: `1px solid ${C.cardBorder}` }}
+        >
+          <div style={{ borderRight: `1px solid ${C.divider}`, paddingRight: '1rem' }}>
+            <WeatherCard weather={weather} loading={weatherLoading} locationSet={locationSet} dark />
+          </div>
+          <div>
+            <MarketCard date={date} />
+          </div>
+        </div>
 
-        {/* Quote */}
-        <QuoteSection quote={quote} loading={loading} onSave={saveQuote} />
-
-        {/* Calendar + Notes (hourly timeline) */}
+        {/* ── Calendar + Notes (hourly timeline) ── */}
         <SectionDivider label="Calendar" />
         <HourlyTimeline
           events={events}
@@ -80,11 +139,12 @@ export function DayPage({ date, user, calendarConnected, onBack }) {
           onUpdate={updateNote}
           onDelete={deleteNote}
           onPin={pinNote}
+          onDeleteEvent={deleteEvent}
           onRefresh={refreshCalendar}
         />
 
-        {/* Headlines */}
-        <SectionDivider label="Headlines" />
+        {/* ── Top Headline ── */}
+        <SectionDivider label="Top Headline" />
         <NewsSection
           headlines={headlines}
           selectedHeadlineId={selectedHeadlineId}
@@ -92,6 +152,11 @@ export function DayPage({ date, user, calendarConnected, onBack }) {
           onSelect={selectHeadline}
           date={date}
         />
+
+        {/* ── Quote — at the very bottom ── */}
+        <SectionDivider label="Quote" />
+        <QuoteSection quote={quote} loading={loading} onSave={saveQuote} />
+
       </div>
     </div>
   )

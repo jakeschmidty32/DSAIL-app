@@ -329,7 +329,7 @@ router.post('/:date/notes', async (req, res, next) => {
   try {
     const { date } = req.params
     const userId = req.session.userId
-    const { content, isVoice = false } = req.body
+    const { content, isVoice = false, createdAt } = req.body
 
     if (!isValidDate(date)) {
       return res.status(400).json({ error: 'Invalid date' })
@@ -341,14 +341,20 @@ router.post('/:date/notes', async (req, res, next) => {
 
     const journalDayId = await ensureJournalDay(userId, date)
 
+    const insertData = {
+      journal_day_id: journalDayId,
+      content: content.trim(),
+      is_voice: isVoice,
+      is_pinned: false,
+    }
+    // Allow client to specify a timestamp so notes appear in the correct hour row
+    if (createdAt && typeof createdAt === 'string') {
+      insertData.created_at = createdAt
+    }
+
     const { data: note, error } = await supabase
       .from('journal_notes')
-      .insert({
-        journal_day_id: journalDayId,
-        content: content.trim(),
-        is_voice: isVoice,
-        is_pinned: false,
-      })
+      .insert(insertData)
       .select('*')
       .single()
 

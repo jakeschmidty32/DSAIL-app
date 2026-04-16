@@ -20,6 +20,7 @@ export const api = {
     events: (date) => apiFetch(`/api/calendar/events?date=${date}`),
     refresh: (date) =>
       apiFetch(`/api/calendar/events/refresh?date=${date}`, { method: 'POST' }),
+    deleteEvent: (id) => apiFetch(`/api/calendar/events/${id}`, { method: 'DELETE' }),
   },
   weather: {
     get: (date) => apiFetch(`/api/weather?date=${date}`),
@@ -56,6 +57,9 @@ export const api = {
       apiFetch(`/api/journal/list?start=${start}&end=${end}`),
     search: (params) =>
       apiFetch(`/api/journal/search?${new URLSearchParams(params)}`),
+  },
+  market: {
+    get: (date) => apiFetch(`/api/market?date=${date}`),
   },
   settings: {
     get: () => apiFetch('/api/settings'),

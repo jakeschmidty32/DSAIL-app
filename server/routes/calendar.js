@@ -201,4 +201,42 @@ router.post('/events/refresh', async (req, res, next) => {
   }
 })
 
+// DELETE /api/calendar/events/:id — remove a cached event from the journal
+router.delete('/events/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params
+    const userId = req.session.userId
+
+    // Verify ownership: the event's journal_day must belong to this user
+    const { data: event } = await supabase
+      .from('journal_events')
+      .select('id, journal_day_id')
+      .eq('id', id)
+      .maybeSingle()
+
+    if (!event) return res.status(404).json({ error: 'Event not found' })
+
+    // Check the journal_day belongs to this user
+    const { data: day } = await supabase
+      .from('journal_days')
+      .select('id')
+      .eq('id', event.journal_day_id)
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    if (!day) return res.status(403).json({ error: 'Forbidden' })
+
+    const { error } = await supabase
+      .from('journal_events')
+      .delete()
+      .eq('id', id)
+
+    if (error) return next(new Error(`Failed to delete event: ${error.message}`))
+
+    return res.json({ ok: true })
+  } catch (err) {
+    next(err)
+  }
+})
+
 export default router
