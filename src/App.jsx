@@ -99,12 +99,12 @@ export default function App() {
       <div className="flex flex-col" style={{ height: '100vh', background: '#0f0f17', overflow: 'hidden' }}>
         {/* Header */}
         <header
-          className="flex items-center gap-3 px-5 py-3 shrink-0"
+          className="flex items-center gap-3 px-6 py-4 shrink-0"
           style={{ background: '#13131e', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
         >
           <span
-            className="font-optima font-semibold text-sm tracking-wide"
-            style={{ color: 'rgba(220,220,255,0.7)', letterSpacing: '0.04em' }}
+            className="font-optima font-bold tracking-wide"
+            style={{ fontSize: 'clamp(1.25rem, 3vw, 2rem)', color: 'rgba(230,230,255,0.92)', letterSpacing: '0.03em' }}
           >
             Each Day — Remembered
           </span>

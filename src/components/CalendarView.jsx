@@ -106,10 +106,10 @@ export function CalendarView({ calendarMonth, setCalendarMonth, onSelectDate, se
         style={{ borderBottom: `1px solid ${CELL_BORDER}` }}
       >
         {DAY_HEADERS.map(h => (
-          <div key={h} className="text-center py-2">
+          <div key={h} className="text-center py-3">
             <span
-              className="font-optima text-xs uppercase tracking-widest"
-              style={{ color: TEXT_GHOST }}
+              className="font-optima font-bold uppercase tracking-widest"
+              style={{ fontSize: 'clamp(0.7rem, 1.2vw, 0.9rem)', color: 'rgba(200,200,230,0.85)' }}
             >
               {h}
             </span>
@@ -154,16 +154,17 @@ export function CalendarView({ calendarMonth, setCalendarMonth, onSelectDate, se
               {/* Date number */}
               {todayFlag ? (
                 <span
-                  className="w-7 h-7 flex items-center justify-center rounded-full font-optima font-bold text-base leading-none"
-                  style={{ background: '#4f46e5', color: '#fff' }}
+                  className="w-9 h-9 flex items-center justify-center rounded-full font-optima font-bold leading-none"
+                  style={{ fontSize: 'clamp(1rem, 1.8vw, 1.4rem)', background: '#4f46e5', color: '#fff' }}
                 >
                   {format(date, 'd')}
                 </span>
               ) : (
                 <span
-                  className="font-optima font-bold leading-none text-base"
+                  className="font-optima font-bold leading-none"
                   style={{
-                    color: !inMonth ? TEXT_GHOST : isPast ? 'rgba(100,100,140,0.55)' : TEXT_PRIMARY,
+                    fontSize: 'clamp(1rem, 1.8vw, 1.4rem)',
+                    color: !inMonth ? TEXT_GHOST : isPast ? 'rgba(140,140,175,0.5)' : 'rgba(230,230,255,0.95)',
                   }}
                 >
                   {format(date, 'd')}
