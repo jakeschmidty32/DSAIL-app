@@ -5,9 +5,10 @@ import { CalendarView } from './components/CalendarView.jsx'
 import { DayPage } from './components/DayPage.jsx'
 import { SearchBar } from './components/SearchBar.jsx'
 import { Settings } from './components/Settings.jsx'
+import { EmailAuthModal } from './components/EmailAuthModal.jsx'
 
 // ── Login screen ──────────────────────────────────────────────────────────────
-function LoginScreen() {
+function LoginScreen({ onEmailAuth }) {
   return (
     <div
       className="relative min-h-screen flex flex-col items-center justify-center px-4"
@@ -25,18 +26,41 @@ function LoginScreen() {
         >
           Each Day — Remembered
         </h1>
-        <a
-          href="/api/auth/connect"
-          className="inline-flex items-center gap-3 bg-white border border-gray-200 text-gray-700 px-5 py-3 rounded-xl font-medium hover:bg-gray-50 shadow-sm transition-colors"
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24">
-            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-          </svg>
-          Sign in with Google
-        </a>
+
+        {/* Sign-in buttons */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
+          {/* Google sign-in */}
+          <a
+            href="/api/auth/connect"
+            className="inline-flex items-center gap-3 bg-white border border-gray-200 text-gray-700 px-5 py-3 rounded-xl font-medium hover:bg-gray-50 shadow-sm transition-colors"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            Sign in with Google
+          </a>
+
+          {/* Email sign-in */}
+          <button
+            onClick={onEmailAuth}
+            className="inline-flex items-center gap-3 border text-white px-5 py-3 rounded-xl font-medium shadow-sm transition-colors"
+            style={{ background: 'rgba(255,255,255,0.12)', borderColor: 'rgba(255,255,255,0.25)', backdropFilter: 'blur(8px)' }}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
+            </svg>
+            Sign in with Email
+          </button>
+        </div>
+
+        {/* Hint text */}
+        <p className="text-xs mt-2" style={{ color: 'rgba(255,255,255,0.45)' }}>
+          Sign in with Google to sync your Google Calendar into your Daily Journal
+        </p>
       </div>
     </div>
   )
@@ -44,13 +68,14 @@ function LoginScreen() {
 
 // ── Main app shell ─────────────────────────────────────────────────────────────
 export default function App() {
-  const { user, calendarConnected, loading, refetch } = useAuth()
+  const { user, calendarConnected, spotifyConnected, loading, refetch } = useAuth()
 
   const [view, setView] = useState('calendar')
   const [selectedDate, setSelectedDate] = useState(toDateStr(new Date()))
   const [calendarMonth, setCalendarMonth] = useState(new Date())
   const [showSearch, setShowSearch] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [showEmailAuth, setShowEmailAuth] = useState(false)
 
   const searchParams = new URLSearchParams(window.location.search)
   if (searchParams.get('connected') === 'true' && !loading) {
@@ -87,7 +112,17 @@ export default function App() {
     )
   }
 
-  if (!user) return <LoginScreen />
+  if (!user) return (
+    <>
+      <LoginScreen onEmailAuth={() => setShowEmailAuth(true)} />
+      {showEmailAuth && (
+        <EmailAuthModal
+          onSuccess={() => { setShowEmailAuth(false); refetch() }}
+          onClose={() => setShowEmailAuth(false)}
+        />
+      )}
+    </>
+  )
 
   // ── Shared icon buttons ──────────────────────────────────────────────────────
   const iconBtnCls = 'p-2 rounded-lg transition-colors'
@@ -146,7 +181,7 @@ export default function App() {
         </div>
 
         {showSearch && <SearchBar onResult={handleSearchResult} onClose={() => setShowSearch(false)} />}
-        {showSettings && <Settings user={user} calendarConnected={calendarConnected} onClose={() => setShowSettings(false)} onSaved={refetch} />}
+        {showSettings && <Settings user={user} calendarConnected={calendarConnected} spotifyConnected={spotifyConnected} onClose={() => setShowSettings(false)} onSaved={refetch} />}
       </div>
     )
   }
@@ -197,12 +232,13 @@ export default function App() {
         date={selectedDate}
         user={user}
         calendarConnected={calendarConnected}
+        spotifyConnected={spotifyConnected}
         onBack={goToCalendar}
         onNavigate={navigateDay}
       />
 
       {showSearch && <SearchBar onResult={handleSearchResult} onClose={() => setShowSearch(false)} />}
-      {showSettings && <Settings user={user} calendarConnected={calendarConnected} onClose={() => setShowSettings(false)} onSaved={refetch} />}
+      {showSettings && <Settings user={user} calendarConnected={calendarConnected} spotifyConnected={spotifyConnected} onClose={() => setShowSettings(false)} onSaved={refetch} />}
     </div>
   )
 }

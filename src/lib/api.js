@@ -15,6 +15,8 @@ export const api = {
   auth: {
     me: () => apiFetch('/api/auth/me'),
     logout: () => apiFetch('/api/auth/logout', { method: 'POST' }),
+    register: (body) => apiFetch('/api/auth/register', { method: 'POST', body: JSON.stringify(body) }),
+    login: (body) => apiFetch('/api/auth/login', { method: 'POST', body: JSON.stringify(body) }),
   },
   calendar: {
     events: (date) => apiFetch(`/api/calendar/events?date=${date}`),
@@ -60,6 +62,15 @@ export const api = {
   },
   market: {
     get: (date) => apiFetch(`/api/market?date=${date}`),
+  },
+  spotify: {
+    tracks: (date) => apiFetch(`/api/spotify/tracks?date=${date}`),
+    disconnect: () => apiFetch('/api/spotify/disconnect', { method: 'POST' }),
+  },
+  watchlist: {
+    get: () => apiFetch('/api/watchlist'),
+    add: (ticker) => apiFetch('/api/watchlist', { method: 'POST', body: JSON.stringify({ ticker }) }),
+    remove: (ticker) => apiFetch(`/api/watchlist/${encodeURIComponent(ticker)}`, { method: 'DELETE' }),
   },
   settings: {
     get: () => apiFetch('/api/settings'),

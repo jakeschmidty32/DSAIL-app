@@ -10,6 +10,9 @@ import newsRouter from './routes/news.js'
 import journalRouter from './routes/journal.js'
 import settingsRouter from './routes/settings.js'
 import marketRouter from './routes/market.js'
+import emailAuthRouter from './routes/emailAuth.js'
+import spotifyRouter from './routes/spotify.js'
+import watchlistRouter from './routes/watchlist.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -43,6 +46,9 @@ app.use('/api/news', newsRouter)
 app.use('/api/journal', journalRouter)
 app.use('/api/settings', settingsRouter)
 app.use('/api/market', marketRouter)
+app.use('/api/auth', emailAuthRouter)   // register + login (additional auth routes)
+app.use('/api/spotify', spotifyRouter)
+app.use('/api/watchlist', watchlistRouter)
 
 // Global error handler
 // eslint-disable-next-line no-unused-vars

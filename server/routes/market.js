@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { supabase } from '../lib/supabase.js'
 import requireAuth from '../middleware/requireAuth.js'
 
 const router = Router()
@@ -14,7 +15,6 @@ const YF_HEADERS = {
   'Accept': 'application/json',
 }
 
-// Fetch one ticker — returns { price, changePercent, chartPrices } or null
 async function fetchTicker(ticker, date, isToday) {
   const enc = encodeURIComponent(ticker)
   try {
@@ -78,7 +78,6 @@ async function fetchTicker(ticker, date, isToday) {
 }
 
 // GET /api/market?date=YYYY-MM-DD
-// Returns data for S&P 500, MLM, and GLW in a single response
 router.get('/', async (req, res, next) => {
   try {
     const { date } = req.query
@@ -86,11 +85,19 @@ router.get('/', async (req, res, next) => {
 
     const todayStr = new Date().toISOString().slice(0, 10)
     const isToday = date === todayStr
+    const userId = req.session.userId
 
+    // Load user's watchlist
+    const { data: watchlist } = await supabase
+      .from('user_watchlist')
+      .select('ticker, label')
+      .eq('user_id', userId)
+      .order('position', { ascending: true })
+
+    // Always include S&P 500 as baseline, then user's watchlist
     const TICKERS = [
       { ticker: '^GSPC', label: 'S&P 500' },
-      { ticker: 'MLM',   label: 'MLM' },
-      { ticker: 'GLW',   label: 'GLW' },
+      ...(watchlist || []),
     ]
 
     const results = await Promise.allSettled(
@@ -99,13 +106,7 @@ router.get('/', async (req, res, next) => {
 
     const stocks = TICKERS.map(({ ticker, label }, i) => {
       const d = results[i].status === 'fulfilled' ? results[i].value : null
-      return {
-        ticker,
-        label,
-        price: d?.price ?? null,
-        changePercent: d?.changePercent ?? null,
-        chartPrices: d?.chartPrices ?? [],
-      }
+      return { ticker, label, price: d?.price ?? null, changePercent: d?.changePercent ?? null, chartPrices: d?.chartPrices ?? [] }
     })
 
     return res.json({ stocks, isToday })

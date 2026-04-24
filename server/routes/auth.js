@@ -132,7 +132,7 @@ router.get('/callback', async (req, res, next) => {
 router.get('/me', async (req, res, next) => {
   try {
     if (!req.session?.userId) {
-      return res.json({ user: null, calendarConnected: false })
+      return res.json({ user: null, calendarConnected: false, spotifyConnected: false, spotifyDisplayName: null })
     }
 
     const userId = req.session.userId
@@ -144,12 +144,18 @@ router.get('/me', async (req, res, next) => {
       .single()
 
     if (userError || !user) {
-      return res.json({ user: null, calendarConnected: false })
+      return res.json({ user: null, calendarConnected: false, spotifyConnected: false, spotifyDisplayName: null })
     }
 
     const { data: calAccount } = await supabase
       .from('calendar_accounts')
       .select('user_id')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    const { data: spotifyAccount } = await supabase
+      .from('spotify_accounts')
+      .select('user_id, display_name')
       .eq('user_id', userId)
       .maybeSingle()
 
@@ -163,6 +169,8 @@ router.get('/me', async (req, res, next) => {
         temperatureUnit: user.temperature_unit,
       },
       calendarConnected: !!calAccount,
+      spotifyConnected: !!spotifyAccount,
+      spotifyDisplayName: spotifyAccount?.display_name || null,
     })
   } catch (err) {
     next(err)

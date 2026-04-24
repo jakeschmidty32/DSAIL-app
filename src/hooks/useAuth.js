@@ -5,6 +5,7 @@ export function useAuth() {
   const [state, setState] = useState({
     user: null,
     calendarConnected: false,
+    spotifyConnected: false,
     loading: true,
   })
 
@@ -14,10 +15,11 @@ export function useAuth() {
       setState({
         user: data.user,
         calendarConnected: data.calendarConnected,
+        spotifyConnected: data.spotifyConnected ?? false,
         loading: false,
       })
     } catch {
-      setState({ user: null, calendarConnected: false, loading: false })
+      setState({ user: null, calendarConnected: false, spotifyConnected: false, loading: false })
     }
   }
 
