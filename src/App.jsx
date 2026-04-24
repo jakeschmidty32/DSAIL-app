@@ -68,7 +68,7 @@ function LoginScreen({ onEmailAuth }) {
 
 // ── Main app shell ─────────────────────────────────────────────────────────────
 export default function App() {
-  const { user, calendarConnected, spotifyConnected, loading, refetch } = useAuth()
+  const { user, calendarConnected, loading, refetch } = useAuth()
 
   const [view, setView] = useState('calendar')
   const [selectedDate, setSelectedDate] = useState(toDateStr(new Date()))
@@ -78,8 +78,9 @@ export default function App() {
   const [showEmailAuth, setShowEmailAuth] = useState(false)
 
   const searchParams = new URLSearchParams(window.location.search)
-  if (searchParams.get('connected') === 'true' && !loading) {
+  if ((searchParams.get('connected') === 'true' || searchParams.get('spotify') === 'connected') && !loading) {
     window.history.replaceState({}, '', '/')
+    refetch()
   }
 
   const openDay = useCallback((dateStr) => {
@@ -181,7 +182,7 @@ export default function App() {
         </div>
 
         {showSearch && <SearchBar onResult={handleSearchResult} onClose={() => setShowSearch(false)} />}
-        {showSettings && <Settings user={user} calendarConnected={calendarConnected} spotifyConnected={spotifyConnected} onClose={() => setShowSettings(false)} onSaved={refetch} />}
+        {showSettings && <Settings user={user} calendarConnected={calendarConnected} onClose={() => setShowSettings(false)} onSaved={refetch} />}
       </div>
     )
   }
@@ -232,13 +233,12 @@ export default function App() {
         date={selectedDate}
         user={user}
         calendarConnected={calendarConnected}
-        spotifyConnected={spotifyConnected}
         onBack={goToCalendar}
         onNavigate={navigateDay}
       />
 
       {showSearch && <SearchBar onResult={handleSearchResult} onClose={() => setShowSearch(false)} />}
-      {showSettings && <Settings user={user} calendarConnected={calendarConnected} spotifyConnected={spotifyConnected} onClose={() => setShowSettings(false)} onSaved={refetch} />}
+      {showSettings && <Settings user={user} calendarConnected={calendarConnected} onClose={() => setShowSettings(false)} onSaved={refetch} />}
     </div>
   )
 }

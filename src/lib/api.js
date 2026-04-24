@@ -61,16 +61,14 @@ export const api = {
       apiFetch(`/api/journal/search?${new URLSearchParams(params)}`),
   },
   market: {
-    get: (date) => apiFetch(`/api/market?date=${date}`),
-  },
-  spotify: {
-    tracks: (date) => apiFetch(`/api/spotify/tracks?date=${date}`),
-    disconnect: () => apiFetch('/api/spotify/disconnect', { method: 'POST' }),
+    get: (date, tickers = '') => {
+      const params = new URLSearchParams({ date })
+      if (tickers) params.set('tickers', tickers)
+      return apiFetch(`/api/market?${params.toString()}`)
+    },
   },
   watchlist: {
-    get: () => apiFetch('/api/watchlist'),
     add: (ticker) => apiFetch('/api/watchlist', { method: 'POST', body: JSON.stringify({ ticker }) }),
-    remove: (ticker) => apiFetch(`/api/watchlist/${encodeURIComponent(ticker)}`, { method: 'DELETE' }),
   },
   settings: {
     get: () => apiFetch('/api/settings'),

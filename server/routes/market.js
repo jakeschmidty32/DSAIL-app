@@ -1,5 +1,4 @@
 import { Router } from 'express'
-import { supabase } from '../lib/supabase.js'
 import requireAuth from '../middleware/requireAuth.js'
 
 const router = Router()
@@ -77,27 +76,33 @@ async function fetchTicker(ticker, date, isToday) {
   }
 }
 
-// GET /api/market?date=YYYY-MM-DD
+// GET /api/market?date=YYYY-MM-DD&tickers=AAPL:Apple,TSLA:Tesla
 router.get('/', async (req, res, next) => {
   try {
-    const { date } = req.query
+    const { date, tickers: tickersParam } = req.query
     if (!isValidDate(date)) return res.status(400).json({ error: 'Invalid date' })
 
     const todayStr = new Date().toISOString().slice(0, 10)
     const isToday = date === todayStr
-    const userId = req.session.userId
 
-    // Load user's watchlist
-    const { data: watchlist } = await supabase
-      .from('user_watchlist')
-      .select('ticker, label')
-      .eq('user_id', userId)
-      .order('position', { ascending: true })
+    // Parse extra tickers from query param — format: "TICKER:Label,TICKER2:Label2"
+    const extraTickers = (tickersParam || '')
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .map((t) => {
+        const idx = t.indexOf(':')
+        if (idx === -1) return { ticker: t.toUpperCase(), label: t.toUpperCase() }
+        const ticker = t.slice(0, idx).toUpperCase()
+        const label = decodeURIComponent(t.slice(idx + 1))
+        return { ticker, label }
+      })
+      .filter((t) => /^[\^A-Z0-9.\-=]{1,10}$/.test(t.ticker))
+      .slice(0, 10)
 
-    // Always include S&P 500 as baseline, then user's watchlist
     const TICKERS = [
       { ticker: '^GSPC', label: 'S&P 500' },
-      ...(watchlist || []),
+      ...extraTickers,
     ]
 
     const results = await Promise.allSettled(
