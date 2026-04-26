@@ -128,6 +128,7 @@ export function CalendarView({ calendarMonth, setCalendarMonth, onSelectDate, se
           const todayFlag = isToday(date)
           const isPast = inMonth && date < today && !todayFlag
           const isSelected = selectedParsed && isSameDay(date, selectedParsed)
+          const albumArtUrl = inMonth ? (meta?.albumArtUrl ?? null) : null
 
           // Cell background
           let cellBg = CELL_FUTURE
@@ -144,36 +145,53 @@ export function CalendarView({ calendarMonth, setCalendarMonth, onSelectDate, se
             <button
               key={dateStr}
               onClick={() => inMonth && onSelectDate(dateStr)}
-              className="relative flex flex-col items-start p-2 transition-colors duration-100"
+              className="relative flex flex-col items-start p-2 transition-opacity duration-100"
               style={{
-                background: cellBg,
+                background: albumArtUrl ? 'transparent' : cellBg,
+                backgroundImage: albumArtUrl ? `url(${albumArtUrl})` : undefined,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
                 border: `1px solid ${CELL_BORDER}`,
                 cursor: inMonth ? 'pointer' : 'default',
               }}
             >
-              {/* Date number */}
-              {todayFlag ? (
+              {/* Dark scrim over album art so content stays legible */}
+              {albumArtUrl && (
                 <span
-                  className="w-9 h-9 flex items-center justify-center rounded-full font-optima font-bold leading-none"
-                  style={{ fontSize: 'clamp(1rem, 1.8vw, 1.4rem)', background: '#4f46e5', color: '#fff' }}
-                >
-                  {format(date, 'd')}
-                </span>
-              ) : (
-                <span
-                  className="font-optima font-bold leading-none"
-                  style={{
-                    fontSize: 'clamp(1rem, 1.8vw, 1.4rem)',
-                    color: !inMonth ? TEXT_GHOST : isPast ? 'rgba(140,140,175,0.5)' : 'rgba(230,230,255,0.95)',
-                  }}
-                >
-                  {format(date, 'd')}
-                </span>
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ background: 'rgba(8,8,18,0.52)', borderRadius: 'inherit' }}
+                />
               )}
+
+              {/* Date number */}
+              <span className="relative z-10">
+                {todayFlag ? (
+                  <span
+                    className="w-9 h-9 flex items-center justify-center rounded-full font-optima font-bold leading-none"
+                    style={{ fontSize: 'clamp(1rem, 1.8vw, 1.4rem)', background: '#4f46e5', color: '#fff' }}
+                  >
+                    {format(date, 'd')}
+                  </span>
+                ) : (
+                  <span
+                    className="font-optima font-bold leading-none"
+                    style={{
+                      fontSize: 'clamp(1rem, 1.8vw, 1.4rem)',
+                      color: !inMonth
+                        ? TEXT_GHOST
+                        : albumArtUrl
+                          ? 'rgba(240,240,255,0.95)'
+                          : isPast ? 'rgba(140,140,175,0.5)' : 'rgba(230,230,255,0.95)',
+                    }}
+                  >
+                    {format(date, 'd')}
+                  </span>
+                )}
+              </span>
 
               {/* Entry dots */}
               {dots.length > 0 && (
-                <div className="flex gap-1 mt-auto pb-0.5">
+                <div className="relative z-10 flex gap-1 mt-auto pb-0.5">
                   {dots.map((color, i) => (
                     <span key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: color, display: 'inline-block' }} />
                   ))}

@@ -2,7 +2,13 @@ import { Router } from 'express'
 import crypto from 'crypto'
 import { supabase } from '../lib/supabase.js'
 import requireAuth from '../middleware/requireAuth.js'
-import { getValidToken, getDailySummary } from '../lib/spotify.js'
+import {
+  getValidToken,
+  getDailySummary,
+  fetchRecentlyPlayedPaged,
+  buildDailySummariesFromItems,
+  getDateInTz,
+} from '../lib/spotify.js'
 
 const router = Router()
 
@@ -142,6 +148,119 @@ router.get('/day', requireAuth, async (req, res, next) => {
     }
 
     res.json({ summary: result.summary, cached: result.cached })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// GET /api/spotify/month?start=YYYY-MM-DD&end=YYYY-MM-DD&tz=America/New_York
+// Returns a map of date → top song album art URL.
+// For any dates not yet cached, proactively fetches from Spotify and populates the cache.
+router.get('/month', requireAuth, async (req, res, next) => {
+  try {
+    const { start, end, tz } = req.query
+    const dateRe = /^\d{4}-\d{2}-\d{2}$/
+    if (!start || !end || !dateRe.test(start) || !dateRe.test(end)) {
+      return res.status(400).json({ error: 'Invalid start/end date' })
+    }
+
+    const userId = req.session.userId
+
+    // Resolve timezone
+    let timezone = 'UTC'
+    if (tz) {
+      try { Intl.DateTimeFormat(undefined, { timeZone: tz }); timezone = tz } catch {}
+    } else {
+      const { data: user } = await supabase
+        .from('users').select('timezone').eq('id', userId).maybeSingle()
+      timezone = user?.timezone || 'UTC'
+    }
+
+    // ── 1. Check cache ─────────────────────────────────────────────────────────
+    const { data: cachedRows, error: cacheErr } = await supabase
+      .from('spotify_daily_summary')
+      .select('date, top_song_album_art_url, total_listening_time_ms')
+      .eq('user_id', userId)
+      .gte('date', start)
+      .lte('date', end)
+
+    if (cacheErr) return next(new Error(cacheErr.message))
+
+    const dates = {}
+    const cachedDateSet = new Set()
+
+    for (const row of cachedRows || []) {
+      // A row is considered "fully synced" if total_listening_time_ms is not null
+      // (both empty-day rows [ms=0] and data rows [ms>0] are fully synced).
+      if (row.total_listening_time_ms !== null) {
+        cachedDateSet.add(row.date)
+        if (row.top_song_album_art_url) {
+          dates[row.date] = { albumArtUrl: row.top_song_album_art_url }
+        }
+      }
+    }
+
+    // ── 2. Find uncached dates ─────────────────────────────────────────────────
+    const [sy, sm, sd] = start.split('-').map(Number)
+    const [ey, em, ed] = end.split('-').map(Number)
+
+    const uncachedDates = []
+    const cursor = new Date(Date.UTC(sy, sm - 1, sd))
+    const endUTC = new Date(Date.UTC(ey, em - 1, ed))
+    while (cursor <= endUTC) {
+      const ds = cursor.toISOString().slice(0, 10)
+      if (!cachedDateSet.has(ds)) uncachedDates.push(ds)
+      cursor.setUTCDate(cursor.getUTCDate() + 1)
+    }
+
+    // ── 3. Fetch from Spotify for uncached dates ───────────────────────────────
+    if (uncachedDates.length > 0) {
+      const accessToken = await getValidToken(userId)
+      if (accessToken) {
+        // Paginate backwards from 2 days past end, stopping 1 day before start
+        const beforeMs = Date.UTC(ey, em - 1, ed + 2)
+        const oldestAllowedMs = Date.UTC(sy, sm - 1, sd - 1)
+
+        const allItems = await fetchRecentlyPlayedPaged(accessToken, beforeMs, oldestAllowedMs)
+        console.log(`[Spotify/month] fetched ${allItems.length} tracks for range ${start}→${end}`)
+
+        // Build per-day summary rows for the uncached dates that have tracks
+        const summaryRows = buildDailySummariesFromItems(allItems, userId, timezone, start, end)
+
+        // Mark which uncached dates now have data
+        const syncedDates = new Set(summaryRows.map(r => r.date))
+
+        // For uncached dates with NO tracks, write empty rows so we don't re-fetch next time
+        const emptyRows = uncachedDates
+          .filter(d => !syncedDates.has(d))
+          .map(d => ({
+            user_id: userId,
+            date: d,
+            total_listening_time_ms: 0,
+            top_song_name: null,
+            top_song_artist: null,
+            top_song_album_art_url: null,
+            top_artist_name: null,
+            top_artist_image_url: null,
+          }))
+
+        const allUpserts = [...summaryRows, ...emptyRows]
+        if (allUpserts.length > 0) {
+          await supabase
+            .from('spotify_daily_summary')
+            .upsert(allUpserts, { onConflict: 'user_id,date' })
+        }
+
+        // Merge newly fetched art into the response
+        for (const row of summaryRows) {
+          if (row.top_song_album_art_url) {
+            dates[row.date] = { albumArtUrl: row.top_song_album_art_url }
+          }
+        }
+      }
+    }
+
+    res.json({ dates })
   } catch (err) {
     next(err)
   }

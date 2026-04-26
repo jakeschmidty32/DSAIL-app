@@ -72,6 +72,7 @@ export const api = {
   },
   spotify: {
     day: (date, tz) => apiFetch(`/api/spotify/day?date=${date}${tz ? `&tz=${encodeURIComponent(tz)}` : ''}`),
+    month: (start, end, tz) => apiFetch(`/api/spotify/month?start=${start}&end=${end}${tz ? `&tz=${encodeURIComponent(tz)}` : ''}`),
     disconnect: () => apiFetch('/api/spotify/disconnect', { method: 'POST' }),
   },
   settings: {

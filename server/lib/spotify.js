@@ -57,7 +57,7 @@ export async function getValidToken(userId) {
   return access_token
 }
 
-function getDateInTz(isoStr, tz) {
+export function getDateInTz(isoStr, tz) {
   try {
     return new Intl.DateTimeFormat('en-CA', {
       timeZone: tz,
@@ -70,6 +70,109 @@ function getDateInTz(isoStr, tz) {
   }
 }
 
+/**
+ * Paginate backwards through recently-played tracks until we pass oldestAllowedMs.
+ * Returns all items collected (may include some slightly before the range — filter after).
+ */
+export async function fetchRecentlyPlayedPaged(accessToken, beforeMs, oldestAllowedMs) {
+  const allItems = []
+  let cursor = beforeMs
+
+  for (let page = 0; page < 15; page++) {
+    const url = `https://api.spotify.com/v1/me/player/recently-played?limit=50&before=${cursor}`
+    const resp = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+    if (!resp.ok) break
+
+    const data = await resp.json()
+    const items = data.items || []
+    if (items.length === 0) break
+
+    allItems.push(...items)
+
+    const oldestInBatch = new Date(items[items.length - 1].played_at).getTime()
+    if (oldestInBatch <= oldestAllowedMs) break
+
+    cursor = oldestInBatch
+  }
+
+  return allItems
+}
+
+/**
+ * Given a list of Spotify recently-played items, group by date in the user's timezone
+ * and compute the per-day summary rows ready for upsert.
+ */
+export function buildDailySummariesFromItems(items, userId, timezone, start, end) {
+  const tracksByDate = {}
+
+  for (const item of items) {
+    const d = getDateInTz(item.played_at, timezone)
+    if (d < start || d > end) continue
+    if (!tracksByDate[d]) tracksByDate[d] = []
+    tracksByDate[d].push(item)
+  }
+
+  const rows = []
+
+  for (const [date, dayItems] of Object.entries(tracksByDate)) {
+    const trackPlays = new Map()
+    const artistPlays = new Map()
+    let totalMs = 0
+
+    for (const item of dayItems) {
+      const trackId = item.track.id
+      const artistId = item.track.artists[0]?.id
+      trackPlays.set(trackId, {
+        count: (trackPlays.get(trackId)?.count ?? 0) + 1,
+        track: item.track,
+      })
+      if (artistId) {
+        artistPlays.set(artistId, {
+          count: (artistPlays.get(artistId)?.count ?? 0) + 1,
+          artist: item.track.artists[0],
+        })
+      }
+      totalMs += item.track.duration_ms ?? 0
+    }
+
+    const topTrackEntry = [...trackPlays.values()].reduce((a, b) =>
+      b.count > a.count ? b : a
+    )
+    const topArtistEntry = [...artistPlays.values()].reduce((a, b) =>
+      b.count > a.count ? b : a,
+      { count: 0, artist: { name: null } }
+    )
+
+    const topTrack = topTrackEntry.track
+    const topArtist = topArtistEntry.artist
+
+    const topSongs = [...trackPlays.values()]
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3)
+      .map(({ track }) => ({
+        name: track.name,
+        artist: track.artists?.[0]?.name ?? null,
+        albumArtUrl: track.album?.images?.[0]?.url ?? null,
+      }))
+
+    rows.push({
+      user_id: userId,
+      date,
+      total_listening_time_ms: totalMs,
+      top_song_name: topTrack.name ?? null,
+      top_song_artist: topTrack.artists?.[0]?.name ?? null,
+      top_song_album_art_url: topTrack.album?.images?.[0]?.url ?? null,
+      top_artist_name: topArtist?.name ?? null,
+      top_artist_image_url: null, // fetched on first day-page visit
+      top_songs: topSongs,
+    })
+  }
+
+  return rows
+}
+
 export async function getDailySummary(userId, date, timezone) {
   // Cache check
   const { data: cached } = await supabase
@@ -80,6 +183,34 @@ export async function getDailySummary(userId, date, timezone) {
     .maybeSingle()
 
   if (cached) {
+    // If we have a cached row but the artist image is missing and we have an artist name,
+    // try to fetch the image now and upgrade the cache.
+    if (cached.top_artist_name && !cached.top_artist_image_url) {
+      const accessToken = await getValidToken(userId)
+      if (accessToken) {
+        try {
+          // Search for the artist to get their ID, then fetch image
+          const searchResp = await fetch(
+            `https://api.spotify.com/v1/search?q=${encodeURIComponent(cached.top_artist_name)}&type=artist&limit=1`,
+            { headers: { Authorization: `Bearer ${accessToken}` } }
+          )
+          if (searchResp.ok) {
+            const searchData = await searchResp.json()
+            const artist = searchData.artists?.items?.[0]
+            if (artist?.images?.[0]?.url) {
+              cached.top_artist_image_url = artist.images[0].url
+              await supabase
+                .from('spotify_daily_summary')
+                .update({ top_artist_image_url: artist.images[0].url })
+                .eq('user_id', userId)
+                .eq('date', date)
+            }
+          }
+        } catch {
+          // best-effort
+        }
+      }
+    }
     return { summary: normalizeSummary(cached), cached: true }
   }
 
@@ -106,9 +237,6 @@ export async function getDailySummary(userId, date, timezone) {
   const spotData = await spotResp.json()
   const allItems = spotData.items ?? []
   console.log(`[Spotify] recently-played returned ${allItems.length} tracks for user ${userId}`)
-  allItems.slice(0, 5).forEach(item =>
-    console.log(`  played_at=${item.played_at} → in tz=${getDateInTz(item.played_at, timezone)} | track="${item.track.name}"`)
-  )
 
   const items = allItems.filter(
     (item) => getDateInTz(item.played_at, timezone) === date

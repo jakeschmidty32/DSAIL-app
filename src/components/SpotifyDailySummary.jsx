@@ -101,86 +101,97 @@ export function SpotifyDailySummary({ date, spotifyConnected }) {
 
   return (
     <div className="flex gap-6 items-start">
-      {/* ── 3 song cards ── */}
-      <div className="grid grid-cols-3 gap-5 flex-1 min-w-0">
-        {topSongs.map((song, i) => (
-          <div key={i} className="flex flex-col items-center gap-2 text-center min-w-0">
-            {/* Album art */}
-            {(song.albumArtUrl || song.topSongAlbumArtUrl) ? (
-              <img
-                src={song.albumArtUrl || song.topSongAlbumArtUrl}
-                alt={song.name || song.topSongName}
-                className="rounded-lg object-cover shrink-0"
-                style={{ width: 96, height: 96 }}
-              />
-            ) : (
-              <div
-                className="rounded-lg shrink-0 flex items-center justify-center"
-                style={{ width: 96, height: 96, background: 'rgba(255,255,255,0.06)' }}
+
+      {/* ── Top Songs ── */}
+      <div className="flex flex-col gap-3 flex-1 min-w-0">
+        <p className="text-xs font-semibold uppercase tracking-widest text-center" style={{ color: LABEL_COLOR }}>
+          Top Songs
+        </p>
+        <div className="grid grid-cols-3 gap-5">
+          {topSongs.map((song, i) => (
+            <div key={i} className="flex flex-col items-center gap-2 text-center min-w-0">
+              {(song.albumArtUrl || song.topSongAlbumArtUrl) ? (
+                <img
+                  src={song.albumArtUrl || song.topSongAlbumArtUrl}
+                  alt={song.name || song.topSongName}
+                  className="rounded-lg object-cover shrink-0"
+                  style={{ width: 96, height: 96 }}
+                />
+              ) : (
+                <div
+                  className="rounded-lg shrink-0 flex items-center justify-center"
+                  style={{ width: 96, height: 96, background: 'rgba(255,255,255,0.06)' }}
+                >
+                  <span style={{ fontSize: 36 }}>🎵</span>
+                </div>
+              )}
+              <p
+                className="font-optima font-semibold w-full truncate"
+                style={{ color: PRIMARY_COLOR, fontSize: '0.95rem' }}
               >
-                <span style={{ fontSize: 36 }}>🎵</span>
-              </div>
-            )}
-            {/* Song name */}
-            <p
-              className="font-optima font-semibold w-full truncate"
-              style={{ color: PRIMARY_COLOR, fontSize: '0.95rem' }}
-            >
-              {song.name || song.topSongName}
-            </p>
-            {/* Artist name */}
-            <p className="text-xs w-full truncate" style={{ color: SECONDARY_COLOR }}>
-              {song.artist || song.topSongArtist}
-            </p>
-          </div>
-        ))}
+                {song.name || song.topSongName}
+              </p>
+              <p className="text-xs w-full truncate" style={{ color: SECONDARY_COLOR }}>
+                {song.artist || song.topSongArtist}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* ── Vertical divider ── */}
       <div style={{ width: 1, alignSelf: 'stretch', background: 'rgba(255,255,255,0.07)' }} />
 
-      {/* ── Top artist + total time ── */}
-      <div className="flex flex-col items-center gap-4 shrink-0" style={{ minWidth: '7rem' }}>
-        {/* Artist image */}
-        {topArtistName && (
-          <>
-            {topArtistImageUrl ? (
-              <img
-                src={topArtistImageUrl}
-                alt={topArtistName}
-                className="rounded-full object-cover shrink-0"
-                style={{ width: 72, height: 72 }}
-              />
-            ) : (
-              <div
-                className="rounded-full shrink-0 flex items-center justify-center"
-                style={{ width: 72, height: 72, background: 'rgba(255,255,255,0.06)' }}
-              >
-                <span style={{ fontSize: 28 }}>🎤</span>
-              </div>
-            )}
-            <p
-              className="font-optima font-medium text-sm text-center"
-              style={{ color: PRIMARY_COLOR }}
+      {/* ── Top Artist ── */}
+      {topArtistName && (
+        <div className="flex flex-col items-center gap-2 shrink-0" style={{ minWidth: '7rem' }}>
+          <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: LABEL_COLOR }}>
+            Top Artist
+          </p>
+          {topArtistImageUrl ? (
+            <img
+              src={topArtistImageUrl}
+              alt={topArtistName}
+              className="rounded-full object-cover shrink-0"
+              style={{ width: 80, height: 80 }}
+            />
+          ) : (
+            <div
+              className="rounded-full shrink-0 flex items-center justify-center"
+              style={{ width: 80, height: 80, background: 'rgba(255,255,255,0.06)' }}
             >
-              {topArtistName}
-            </p>
-          </>
-        )}
+              <span style={{ fontSize: 32 }}>🎤</span>
+            </div>
+          )}
+          <p
+            className="font-optima font-medium text-sm text-center"
+            style={{ color: PRIMARY_COLOR }}
+          >
+            {topArtistName}
+          </p>
+        </div>
+      )}
 
-        {/* Total listening time */}
-        {totalListeningTimeMs != null && (
-          <div className="flex flex-col items-center gap-0.5">
-            <span
-              className="font-optima font-bold"
-              style={{ color: PRIMARY_COLOR, fontSize: '1.4rem', lineHeight: 1.1 }}
-            >
-              {formatTime(totalListeningTimeMs)}
-            </span>
-            <span className="text-xs" style={{ color: LABEL_COLOR }}>listened</span>
-          </div>
-        )}
-      </div>
+      {/* ── Vertical divider ── */}
+      {totalListeningTimeMs != null && (
+        <div style={{ width: 1, alignSelf: 'stretch', background: 'rgba(255,255,255,0.07)' }} />
+      )}
+
+      {/* ── Total Listening Time ── */}
+      {totalListeningTimeMs != null && (
+        <div className="flex flex-col items-center gap-2 shrink-0" style={{ minWidth: '6rem' }}>
+          <p className="text-xs font-semibold uppercase tracking-widest text-center" style={{ color: LABEL_COLOR }}>
+            Total Listening Time
+          </p>
+          <span
+            className="font-optima font-bold"
+            style={{ color: PRIMARY_COLOR, fontSize: '2rem', lineHeight: 1.1 }}
+          >
+            {formatTime(totalListeningTimeMs)}
+          </span>
+        </div>
+      )}
+
     </div>
   )
 }
