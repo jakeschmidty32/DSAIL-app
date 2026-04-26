@@ -3,6 +3,8 @@ import { useVoice } from '../hooks/useVoice.js'
 import { formatTime } from '../lib/dates.js'
 
 const HOURS = Array.from({ length: 17 }, (_, i) => i + 6) // 6 AM through 10 PM
+const HOURS_AM = HOURS.filter(h => h <= 13) // 6 AM – 1 PM
+const HOURS_PM = HOURS.filter(h => h >= 14) // 2 PM – 10 PM
 
 function hourLabel(h) {
   if (h === 0) return '12:00 AM'
@@ -147,6 +149,26 @@ function AddNoteInline({ onAdd, targetHour }) {
   )
 }
 
+function HourRow({ h, hourEvents, hourNotes, onAdd, onUpdate, onDelete, onPin, onDeleteEvent }) {
+  const isEmpty = hourEvents.length === 0 && hourNotes.length === 0
+  return (
+    <div className={`flex gap-4 py-3 min-h-[3rem] transition-opacity ${isEmpty ? 'opacity-40 hover:opacity-100' : ''}`}>
+      {/* Time label */}
+      <div className="w-20 shrink-0 text-right pt-0.5">
+        <span className="font-optima font-bold text-base" style={{ color: 'rgba(210,215,245,0.85)' }}>{hourLabel(h)}</span>
+      </div>
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        {hourEvents.map(e => <EventChip key={e.id || e.msEventId} event={e} onDelete={onDeleteEvent} />)}
+        {hourNotes.map(n => (
+          <NoteChip key={n.id} note={n} onUpdate={onUpdate} onDelete={onDelete} onPin={onPin} />
+        ))}
+        <AddNoteInline onAdd={(content, isVoice, hour) => onAdd(content, isVoice, hour)} targetHour={h} />
+      </div>
+    </div>
+  )
+}
+
 export function HourlyTimeline({ events, notes, eventsLoading, notesLoading, calendarConnected,
                                   onAdd, onUpdate, onDelete, onPin, onDeleteEvent, onRefresh }) {
   // Group timed events by their start hour
@@ -172,6 +194,8 @@ export function HourlyTimeline({ events, notes, eventsLoading, notesLoading, cal
   })
 
   const loading = eventsLoading || notesLoading
+
+  const sharedRowProps = { onAdd, onUpdate, onDelete, onPin, onDeleteEvent }
 
   return (
     <div>
@@ -202,28 +226,31 @@ export function HourlyTimeline({ events, notes, eventsLoading, notesLoading, cal
           ))}
         </div>
       ) : (
-        <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
-          {HOURS.map(h => {
-            const hourEvents = eventsByHour[h] || []
-            const hourNotes = notesByHour[h] || []
-            const isEmpty = hourEvents.length === 0 && hourNotes.length === 0
-            return (
-              <div key={h} className={`flex gap-4 py-3 min-h-[3rem] transition-opacity ${isEmpty ? 'opacity-40 hover:opacity-100' : ''}`}>
-                {/* Time label */}
-                <div className="w-24 shrink-0 text-right pt-0.5">
-                  <span className="font-optima font-bold text-base" style={{ color: 'rgba(210,215,245,0.85)' }}>{hourLabel(h)}</span>
-                </div>
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  {hourEvents.map(e => <EventChip key={e.id || e.msEventId} event={e} onDelete={onDeleteEvent} />)}
-                  {hourNotes.map(n => (
-                    <NoteChip key={n.id} note={n} onUpdate={onUpdate} onDelete={onDelete} onPin={onPin} />
-                  ))}
-                  <AddNoteInline onAdd={(content, isVoice, hour) => onAdd(content, isVoice, hour)} targetHour={h} />
-                </div>
-              </div>
-            )
-          })}
+        <div className="grid grid-cols-2 gap-x-8">
+          {/* AM column: 6 AM – 1 PM */}
+          <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+            {HOURS_AM.map(h => (
+              <HourRow
+                key={h}
+                h={h}
+                hourEvents={eventsByHour[h] || []}
+                hourNotes={notesByHour[h] || []}
+                {...sharedRowProps}
+              />
+            ))}
+          </div>
+          {/* PM column: 2 PM – 10 PM */}
+          <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+            {HOURS_PM.map(h => (
+              <HourRow
+                key={h}
+                h={h}
+                hourEvents={eventsByHour[h] || []}
+                hourNotes={notesByHour[h] || []}
+                {...sharedRowProps}
+              />
+            ))}
+          </div>
         </div>
       )}
 

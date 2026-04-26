@@ -44,7 +44,7 @@ router.get('/', async (req, res, next) => {
 
     // If we already have headlines, return them (deduplicated in case of race-condition double-insert)
     if (cached && cached.length > 0) {
-      const unique = dedupByTitle(cached)
+      const headlines = dedupByTitle(cached)
 
       const { data: selected } = await supabase
         .from('selected_headlines')
@@ -53,17 +53,28 @@ router.get('/', async (req, res, next) => {
         .eq('date', date)
         .maybeSingle()
 
-      return res.json({
-        headlines: unique,
-        selectedHeadlineId: selected?.headline_id || null,
-      })
+      let selectedHeadlineId = selected?.headline_id || null
+
+      // Auto-select the first headline if none has been chosen yet
+      if (!selectedHeadlineId && headlines.length > 0) {
+        const first = headlines[0]
+        await supabase
+          .from('selected_headlines')
+          .upsert(
+            { user_id: userId, date, headline_id: first.id, title: first.title, source: first.source, url: first.url },
+            { onConflict: 'user_id,date' }
+          )
+        selectedHeadlineId = first.id
+      }
+
+      return res.json({ headlines, selectedHeadlineId })
     }
 
     // Nothing cached — fetch from RSS feeds (4 sources, one article each)
-    const headlines = await fetchTopHeadlines()
+    const fetched = await fetchTopHeadlines()
 
-    if (headlines.length > 0) {
-      const rows = headlines.map((h, i) => ({
+    if (fetched.length > 0) {
+      const rows = fetched.map((h, i) => ({
         user_id: userId,
         date,
         position: i + 1,
@@ -97,10 +108,22 @@ router.get('/', async (req, res, next) => {
       .eq('date', date)
       .maybeSingle()
 
-    return res.json({
-      headlines: dedupByTitle(inserted || []),
-      selectedHeadlineId: selected?.headline_id || null,
-    })
+    const headlines = dedupByTitle(inserted || [])
+    let selectedHeadlineId = selected?.headline_id || null
+
+    // Auto-select the first headline if none has been chosen yet
+    if (!selectedHeadlineId && headlines.length > 0) {
+      const first = headlines[0]
+      await supabase
+        .from('selected_headlines')
+        .upsert(
+          { user_id: userId, date, headline_id: first.id, title: first.title, source: first.source, url: first.url },
+          { onConflict: 'user_id,date' }
+        )
+      selectedHeadlineId = first.id
+    }
+
+    return res.json({ headlines, selectedHeadlineId })
   } catch (err) {
     next(err)
   }

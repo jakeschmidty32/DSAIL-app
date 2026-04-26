@@ -269,6 +269,29 @@ router.get('/:date', async (req, res, next) => {
       .maybeSingle()
     if (quoteRow) quote = { text: quoteRow.text, author: quoteRow.author || null }
 
+    // Auto-fetch an inspirational quote for past days that have no user quote
+    const todayStr = new Date().toISOString().slice(0, 10)
+    if (!quote && date < todayStr) {
+      try {
+        const qResp = await fetch('https://zenquotes.io/api/random', {
+          headers: { 'Accept': 'application/json' }
+        })
+        if (qResp.ok) {
+          const [qData] = await qResp.json()
+          if (qData?.q) {
+            const text = qData.q
+            const author = qData.a || null
+            await supabase
+              .from('quotes')
+              .upsert({ user_id: userId, date, text, author }, { onConflict: 'user_id,date' })
+            quote = { text, author }
+          }
+        }
+      } catch {
+        // best-effort — silently skip if quote API is unavailable
+      }
+    }
+
     return res.json({
       day: {
         date,

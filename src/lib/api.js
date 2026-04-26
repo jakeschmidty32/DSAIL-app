@@ -70,6 +70,10 @@ export const api = {
   watchlist: {
     add: (ticker) => apiFetch('/api/watchlist', { method: 'POST', body: JSON.stringify({ ticker }) }),
   },
+  spotify: {
+    day: (date, tz) => apiFetch(`/api/spotify/day?date=${date}${tz ? `&tz=${encodeURIComponent(tz)}` : ''}`),
+    disconnect: () => apiFetch('/api/spotify/disconnect', { method: 'POST' }),
+  },
   settings: {
     get: () => apiFetch('/api/settings'),
     update: (body) =>

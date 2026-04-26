@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '../lib/api.js'
 
-export function Settings({ user, calendarConnected, onClose, onSaved }) {
+export function Settings({ user, calendarConnected, spotifyConnected, onClose, onSaved }) {
   const [settings, setSettings] = useState(null)
   const [loadingSettings, setLoadingSettings] = useState(true)
 
@@ -20,6 +20,9 @@ export function Settings({ user, calendarConnected, onClose, onSaved }) {
 
   // Auth disconnect
   const [disconnecting, setDisconnecting] = useState(false)
+
+  // Spotify disconnect
+  const [disconnectingSpotify, setDisconnectingSpotify] = useState(false)
 
   useEffect(() => {
     api.settings
@@ -81,6 +84,17 @@ export function Settings({ user, calendarConnected, onClose, onSaved }) {
     } catch {
     } finally {
       setSavingPrefs(false)
+    }
+  }
+
+  async function handleDisconnectSpotify() {
+    setDisconnectingSpotify(true)
+    try {
+      await api.spotify.disconnect()
+      onSaved?.()
+    } catch {
+    } finally {
+      setDisconnectingSpotify(false)
     }
   }
 
@@ -154,6 +168,38 @@ export function Settings({ user, calendarConnected, onClose, onSaved }) {
               </>
             ) : (
               <p className="text-sm text-gray-500">Not signed in</p>
+            )}
+          </div>
+        </section>
+
+        {/* Spotify section */}
+        <section>
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Spotify</h2>
+          <div className="rounded-xl border border-gray-100 bg-white shadow-sm p-4">
+            {spotifyConnected ? (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-700 flex items-center gap-1.5">
+                  <span className="text-green-500">●</span> Spotify connected
+                </span>
+                <button
+                  onClick={handleDisconnectSpotify}
+                  disabled={disconnectingSpotify}
+                  className="px-3 py-1.5 border border-red-200 text-red-600 rounded-lg text-xs font-medium hover:bg-red-50 disabled:opacity-40 transition-colors"
+                >
+                  {disconnectingSpotify ? 'Disconnecting…' : 'Disconnect Spotify'}
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-500">No Spotify account connected</span>
+                <a
+                  href="/api/spotify/connect"
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors"
+                  style={{ background: '#1db954' }}
+                >
+                  Connect Spotify
+                </a>
+              </div>
             )}
           </div>
         </section>

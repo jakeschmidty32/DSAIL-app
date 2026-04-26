@@ -5,6 +5,7 @@ import { WeatherCard } from './WeatherCard.jsx'
 import { MarketCard } from './MarketCard.jsx'
 import { NewsSection } from './NewsSection.jsx'
 import { HourlyTimeline } from './HourlyTimeline.jsx'
+import { SpotifyDailySummary } from './SpotifyDailySummary.jsx'
 
 // ── Colour palette (shared) ────────────────────────────────────────────────────
 const C = {
@@ -36,7 +37,7 @@ function addDays(dateStr, n) {
   return d.toISOString().slice(0, 10)
 }
 
-export function DayPage({ date, user, calendarConnected, onBack, onNavigate }) {
+export function DayPage({ date, user, calendarConnected, spotifyConnected, onBack, onNavigate }) {
   const {
     loading,
     events,
@@ -126,6 +127,10 @@ export function DayPage({ date, user, calendarConnected, onBack, onNavigate }) {
             <MarketCard date={date} />
           </div>
         </div>
+
+        {/* ── Listening ── */}
+        <SectionDivider label="Listening" />
+        <SpotifyDailySummary date={date} spotifyConnected={spotifyConnected} />
 
         {/* ── Calendar + Notes (hourly timeline) ── */}
         <SectionDivider label="Calendar" />
