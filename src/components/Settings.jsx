@@ -24,6 +24,11 @@ export function Settings({ user, calendarConnected, spotifyConnected, onClose, o
   // Spotify disconnect
   const [disconnectingSpotify, setDisconnectingSpotify] = useState(false)
 
+  // Sign out
+  const [signingOut, setSigningOut] = useState(false)
+
+  const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
+
   useEffect(() => {
     api.settings
       .get()
@@ -101,14 +106,21 @@ export function Settings({ user, calendarConnected, spotifyConnected, onClose, o
   async function handleDisconnect() {
     setDisconnecting(true)
     try {
-      await fetch('/api/auth/disconnect', {
-        method: 'POST',
-        credentials: 'include',
-      })
+      await fetch(`${API_BASE}/api/auth/disconnect`, { method: 'POST', credentials: 'include' })
       onSaved?.()
     } catch {
     } finally {
       setDisconnecting(false)
+    }
+  }
+
+  async function handleSignOut() {
+    setSigningOut(true)
+    try {
+      await api.auth.logout()
+      window.location.href = '/'
+    } catch {
+      window.location.href = '/'
     }
   }
 
@@ -135,11 +147,20 @@ export function Settings({ user, calendarConnected, spotifyConnected, onClose, o
           <div className="rounded-xl border border-gray-100 bg-white shadow-sm p-4 space-y-3">
             {user ? (
               <>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    {user.displayName || user.email}
-                  </p>
-                  <p className="text-xs text-gray-500">{user.email}</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {user.displayName || user.email}
+                    </p>
+                    <p className="text-xs text-gray-500">{user.email}</p>
+                  </div>
+                  <button
+                    onClick={handleSignOut}
+                    disabled={signingOut}
+                    className="px-3 py-1.5 border border-gray-200 text-gray-600 rounded-lg text-xs font-medium hover:bg-gray-50 disabled:opacity-40 transition-colors duration-150"
+                  >
+                    {signingOut ? 'Signing out…' : 'Sign out'}
+                  </button>
                 </div>
                 {calendarConnected ? (
                   <div className="flex items-center justify-between">
@@ -158,7 +179,7 @@ export function Settings({ user, calendarConnected, spotifyConnected, onClose, o
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-500">No calendar connected</span>
                     <a
-                      href="/api/auth/connect"
+                      href={`${API_BASE}/api/auth/connect`}
                       className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors duration-150"
                     >
                       Connect Google Calendar
@@ -193,7 +214,7 @@ export function Settings({ user, calendarConnected, spotifyConnected, onClose, o
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500">No Spotify account connected</span>
                 <a
-                  href="/api/spotify/connect"
+                  href={`${API_BASE}/api/spotify/connect`}
                   className="px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors"
                   style={{ background: '#1db954' }}
                 >

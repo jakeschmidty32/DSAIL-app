@@ -83,48 +83,16 @@ export function NewsSection({ headlines, selectedHeadlineId, loading, onSelect }
     )
   }
 
-  const selected = headlines.find((h) => h.id === selectedHeadlineId)
-
-  // ── After selection: show only the chosen headline, centered ─────────────
-  if (selected) {
-    return (
-      <div className="flex flex-col items-center text-center gap-3 py-4">
-        <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: sourceColor(selected.source) }}>
-          {selected.source}
-        </p>
-        <p className="font-journal text-base leading-snug max-w-sm" style={{ color: C.textPrimary }}>
-          {selected.title}
-        </p>
-        {selected.url && (
-          <a
-            href={selected.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs hover:underline"
-            style={{ color: 'rgba(129,140,248,0.7)' }}
-          >
-            Read full article →
-          </a>
-        )}
-        <button
-          onClick={() => onSelect(null)}
-          className="text-xs mt-1 transition-colors"
-          style={{ color: 'rgba(100,100,140,0.5)' }}
-        >
-          Change headline
-        </button>
-      </div>
-    )
-  }
-
-  // ── Before selection: show all three ─────────────────────────────────────
+  // Always show all headlines; selected one is highlighted
   return (
     <div className="space-y-3">
-      <p className="font-journal text-xs italic" style={{ color: C.textMuted }}>
-        Choose one headline to save to this day's journal:
-      </p>
       {headlines.map((h) => (
-        <HeadlineCard key={h.id} h={h} isSelected={false} onSelect={onSelect} />
+        <HeadlineCard
+          key={h.id}
+          h={h}
+          isSelected={h.id === selectedHeadlineId}
+          onSelect={onSelect}
+        />
       ))}
     </div>
   )
