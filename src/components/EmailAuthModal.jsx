@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { api } from '../lib/api.js'
 
 const C = {
   bg: '#1a1a2a',
@@ -28,22 +29,14 @@ export function EmailAuthModal({ onSuccess, onClose }) {
 
     setLoading(true)
     try {
-      const endpoint = tab === 'signin' ? '/api/auth/login' : '/api/auth/register'
-      const body = tab === 'signin'
-        ? { email, password }
-        : { email, password, displayName }
-
-      const resp = await fetch(endpoint, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      const data = await resp.json()
-      if (!resp.ok) { setError(data.error || 'Something went wrong'); return }
+      if (tab === 'signin') {
+        await api.auth.login({ email, password })
+      } else {
+        await api.auth.register({ email, password, displayName })
+      }
       onSuccess()
-    } catch {
-      setError('Network error — please try again')
+    } catch (err) {
+      setError(err.message || 'Network error — please try again')
     } finally {
       setLoading(false)
     }
