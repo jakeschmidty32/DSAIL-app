@@ -31,7 +31,7 @@ function LoginScreen({ onEmailAuth }) {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
           {/* Google sign-in */}
           <a
-            href="/api/auth/connect"
+            href={`${import.meta.env.VITE_API_URL || ''}/api/auth/connect`}
             className="inline-flex items-center gap-3 bg-white border border-gray-200 text-gray-700 px-5 py-3 rounded-xl font-medium hover:bg-gray-50 shadow-sm transition-colors"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">

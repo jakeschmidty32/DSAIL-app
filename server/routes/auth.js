@@ -7,7 +7,8 @@ const router = Router()
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET
-const APP_URL = process.env.APP_URL
+const APP_URL = process.env.APP_URL           // frontend (Cloudflare Pages)
+const BACKEND_URL = process.env.BACKEND_URL || process.env.APP_URL  // API server (Railway)
 
 const SCOPES = [
   'openid',
@@ -21,7 +22,7 @@ router.get('/connect', (req, res) => {
   const state = crypto.randomBytes(16).toString('hex')
   req.session.oauthState = state
 
-  const redirectUri = `${APP_URL}/api/auth/callback`
+  const redirectUri = `${BACKEND_URL}/api/auth/callback`
 
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
@@ -51,7 +52,7 @@ router.get('/callback', async (req, res, next) => {
 
     delete req.session.oauthState
 
-    const redirectUri = `${APP_URL}/api/auth/callback`
+    const redirectUri = `${BACKEND_URL}/api/auth/callback`
 
     // Exchange authorization code for tokens
     const tokenParams = new URLSearchParams({
