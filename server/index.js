@@ -64,7 +64,7 @@ app.use('/api/watchlist', watchlistRouter)
 if (isProd) {
   const distDir = path.join(__dirname, '../dist')
   app.use(express.static(distDir))
-  app.get('*', (req, res) => {
+  app.get(/.*/, (req, res) => {
     res.sendFile(path.join(distDir, 'index.html'))
   })
 }
