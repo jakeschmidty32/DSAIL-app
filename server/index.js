@@ -25,13 +25,11 @@ const PORT = process.env.PORT || 3001
 // Trust Cloudflare / reverse-proxy headers so req.secure and req.ip are accurate
 app.set('trust proxy', 1)
 
-// CORS — only needed in dev (same-origin in production)
-if (!isProd) {
-  app.use(cors({
-    origin: process.env.APP_URL,
-    credentials: true,
-  }))
-}
+// CORS — in production the Pages frontend and Railway backend are different origins
+app.use(cors({
+  origin: process.env.APP_URL,
+  credentials: true,
+}))
 
 // Session
 app.use(session({
@@ -40,8 +38,9 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    sameSite: 'lax',
-    secure: isProd,              // required for HTTPS in production
+    // Cross-origin cookies (Pages → Railway) require sameSite:'none' + secure:true
+    sameSite: isProd ? 'none' : 'lax',
+    secure: isProd,
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   },
 }))

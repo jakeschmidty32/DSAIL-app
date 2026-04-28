@@ -1,5 +1,10 @@
+// In production the frontend (Cloudflare Pages) and backend (Railway) are on
+// different origins. VITE_API_URL lets the build point all /api calls at the
+// Railway URL. In dev it's empty so the Vite proxy handles /api/* as usual.
+const API_BASE = import.meta.env.VITE_API_URL || ''
+
 async function apiFetch(path, options = {}) {
-  const res = await fetch(path, {
+  const res = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',
     ...options,
     headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
