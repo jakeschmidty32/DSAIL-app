@@ -2,6 +2,8 @@ import 'dotenv/config'
 import express from 'express'
 import session from 'express-session'
 import cors from 'cors'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
 import authRouter from './routes/auth.js'
 import calendarRouter from './routes/calendar.js'
@@ -14,14 +16,22 @@ import emailAuthRouter from './routes/emailAuth.js'
 import spotifyRouter from './routes/spotify.js'
 import watchlistRouter from './routes/watchlist.js'
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const isProd = process.env.NODE_ENV === 'production'
+
 const app = express()
 const PORT = process.env.PORT || 3001
 
-// CORS — allow the Vite frontend with credentials
-app.use(cors({
-  origin: process.env.APP_URL,
-  credentials: true,
-}))
+// Trust Cloudflare / reverse-proxy headers so req.secure and req.ip are accurate
+app.set('trust proxy', 1)
+
+// CORS — only needed in dev (same-origin in production)
+if (!isProd) {
+  app.use(cors({
+    origin: process.env.APP_URL,
+    credentials: true,
+  }))
+}
 
 // Session
 app.use(session({
@@ -31,6 +41,7 @@ app.use(session({
   cookie: {
     httpOnly: true,
     sameSite: 'lax',
+    secure: isProd,              // required for HTTPS in production
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   },
 }))
@@ -38,7 +49,7 @@ app.use(session({
 // Body parsing
 app.use(express.json())
 
-// Routes
+// API Routes
 app.use('/api/auth', authRouter)
 app.use('/api/calendar', calendarRouter)
 app.use('/api/weather', weatherRouter)
@@ -49,6 +60,15 @@ app.use('/api/market', marketRouter)
 app.use('/api/auth', emailAuthRouter)   // register + login (additional auth routes)
 app.use('/api/spotify', spotifyRouter)
 app.use('/api/watchlist', watchlistRouter)
+
+// In production: serve the Vite build and let the SPA handle all non-API routes
+if (isProd) {
+  const distDir = path.join(__dirname, '../dist')
+  app.use(express.static(distDir))
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(distDir, 'index.html'))
+  })
+}
 
 // Global error handler
 // eslint-disable-next-line no-unused-vars
